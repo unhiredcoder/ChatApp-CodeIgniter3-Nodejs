@@ -1,75 +1,114 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
-class AuthController extends CI_Controller {
-	public function __construct()
-	{
-		parent::__construct();
-		$this->load->helper(['url', 'cookie']); 
-
-	}
-	public function index()
-	{
-		$this->load->view('Login');
-	}
-	public function register() {
-
-		$this->load->view('Register');
-
-	}
-	public function createUser() {
-
+defined("BASEPATH") or exit("No direct script access allowed");
+class AuthController extends CI_Controller
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->load->helper(["url", "cookie", "jwt"]);
+    }
+    public function index()
+    {
+        $this->load->view("Login");
+    }
+    public function register()
+    {
+        $this->load->view("Register");
+    }
+    public function createUser()
+    {
         // Set validation rules
-        $this->form_validation->set_rules('password', 'Password', 'required|min_length[6]');
-        $this->form_validation->set_rules('cpassword', 'Confirm Password', 'required|matches[password]');
+        $this->form_validation->set_rules(
+            "password",
+            "Password",
+            "required|min_length[6]"
+        );
+        $this->form_validation->set_rules(
+            "cpassword",
+            "Confirm Password",
+            "required|matches[password]"
+        );
 
-        if ($this->form_validation->run() == FALSE) {
+        if ($this->form_validation->run() == false) {
             // Validation failed → reload form with errors
-            $this->load->view('Register');
+            $this->load->view("Register");
         } else {
             // Validation passed → save user
             $url = "http://10.10.15.140:5555/api/register";
-	        $data = array(
-	            'username' => $this->input->post('uname'),
-	            'password' => $this->input->post('password')
-	        );
+            $data = [
+                "username" => $this->input->post("uname"),
+                "password" => $this->input->post("password"),
+            ];
 
-	        // Send JSON to Node backend
+            // Send JSON to Node backend
             $response = $this->curl_library->simple_post($url, $data);
+            $res = json_decode($response, true); // decode JSON into array
 
-            echo "<pre>";
-            print_r($data);
-            echo "</pre>";
+            if (isset($res["error"])) {
+                // Show error message from backend
+                $data["error"] = $res["error"];
+                $this->load->view("Register", $data);
+                return;
+            }
             // echo $response;
-            redirect('AuthController','refresh');
-	 	}
-	}
+            redirect("AuthController", "refresh");
+        }
+    }
 
     public function loginUser()
     {
         $url = "http://10.10.15.140:5555/api/login";
-        $data = array(
-            'username' => $this->input->post('uname'),
-            'password' => $this->input->post('password')
-        );
+        $data = [
+            "username" => $this->input->post("uname"),
+            "password" => $this->input->post("password"),
+        ];
 
         $response = $this->curl_library->simple_post($url, $data);
 
         $res = json_decode($response, true); // decode as array
 
-        if (isset($res['token'])) {
-            $token = $res['token'];
-          
-            // Store JWT in cookie (1 hour expiry)
-            $this->session->set_userdata('jwt_token', $token);
-
-            // Redirect to dashboard
-            redirect('DashboardController');
-        } else {
-            echo "Login Failed!";
+        // If decoding failed (backend sent plain text)
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $data["error"] = $response; // raw message
+            $this->load->view("Login", $data);
+            return;
         }
-        exit;
+
+        if (isset($res["token"])) {
+            $token = $res["token"];
+            $payload = json_decode($token);
+
+            if ($payload && isset($payload["username"])) {
+                $this->session->set_userdata("username", $payload["username"]);
+            }
+
+            set_cookie([
+                "name" => "jwt_token",
+                "value" => $res["token"],
+                "expire" => 7 * 24 * 60 * 60,
+                "secure" => false,
+                "httponly" => true,
+            ]);
+            // Redirect to dashboard
+            redirect("DashboardController");
+            return;
+        }
+        // ❌ Error case: backend returned { error: "..."}
+        $data["error"] = isset($res["error"]) ? $res["error"] : "Login Failed!";
+        $this->load->view("Login", $data);
     }
-	
+
+
+    public function Logout() {
+        $this->session->unset_userdata('username');
+        $this->session->sess_destroy();
+
+        // Delete JWT cookie
+        delete_cookie('jwt_token');
+
+        // Redirect to login page
+        $this -> load -> view('Login');
+    }
 }
 /* End of file AuthController.php */
 /* Location: ./application/controllers/AuthController.php */

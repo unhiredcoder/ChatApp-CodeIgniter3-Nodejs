@@ -13,6 +13,12 @@
 				<div class="flex-column">
 					<h2>Login</h2>
 				</div>
+				
+				<?php if(isset($error)): ?>
+				<div class="error-msg" style="color:red; margin-bottom:10px;">
+					<?= $error ?>
+				</div>
+				<?php endif; ?>
 				<div class="flex-column">
 					<label>User Name</label></div>
 					<div class="inputForm">
@@ -28,7 +34,7 @@
 				</div>
 				
 				<div class="flex-row">
-<!-- 					<div>
+					<!-- 					<div>
 						<input type="radio">
 						<label>Remember me </label>
 					</div> -->
