@@ -174,7 +174,7 @@
     function createUserItem(user, type) {
         const userItem = document.createElement('div');
         userItem.className = 'chat-item';
-        userItem.dataset.userId = user.id || user.socketId;
+        userItem.dataset.userId = user.id;
         userItem.dataset.username = user.name || user.username;
         userItem.dataset.type = type;
         userItem.dataset.socketId = user.socketId || '';
@@ -225,7 +225,7 @@
         // Set current user and room
         currentUser = user;
 
-        console.log("My Id: "+myUserData.id+ ", Selected user Id:" + user.id);
+        console.log("My Id: "+myUserData.id+ ", Selected user Id:" + user.userId);
         // --- NEW ROOM LOGIC: ask backend for conversation ---
         fetch("http://10.10.15.140:5555/api/conversations", {
             method: "POST",
@@ -234,7 +234,7 @@
             },
             body: JSON.stringify({
                 userId1: myUserData.id, // your logged‑in user id
-                userId2: user.id // the clicked user id
+                userId2: user.userId // the clicked user id
             })
         }).then(res => res.json()).then(data => {
             const {
@@ -254,7 +254,8 @@
             // Join the room for this chat
             socket.emit('joinRoom', {
                 roomName: currentRoom,
-                username: myUserData.username
+                username: myUserData.username,
+                id: myUserData.id  
             });
             console.log(`Joined room: ${currentRoom} with user: ${displayName}`);
             // Enable input and send button
@@ -401,7 +402,8 @@
         // Immediately join with real username when connected
         socket.emit('joinRoom', {
             roomName: 'general',
-            username: myUserData.username
+            username: myUserData.username,
+            id: myUserData.id  
         });
     });
     socket.on('userListUpdate', (users) => {

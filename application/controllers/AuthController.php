@@ -76,11 +76,13 @@ class AuthController extends CI_Controller
 
         if (isset($res["token"])) {
             $token = $res["token"];
-            $payload = json_decode($token);
+            $payload = decode_jwt($token);
 
-            if ($payload && isset($payload["username"])) {
-                $this->session->set_userdata("username", $payload["username"]);
-            }
+        if ($payload && isset($payload["username"])) {
+            $this->session->set_userdata("username", $payload["username"]);
+            $this->session->set_userdata("userId", $payload["id"]);
+        }
+
 
             set_cookie([
                 "name" => "jwt_token",
