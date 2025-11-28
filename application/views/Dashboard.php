@@ -38,11 +38,7 @@
         <div class="chats-list" id="online-users-list">
             <div class="loading">Loading online users...</div>
         </div>
-        <!-- Static Users Section -->
-        <div class="section-header">All Users</div>
-        <div class="chats-list" id="static-users-list">
-            <!-- Static users will be loaded here -->
-        </div>
+    
     </div>
     <!-- Main Chat Area -->
     <div class="chat-area">
@@ -435,7 +431,7 @@
     </script>
     <style>
     .current-user-info {
-        display: flex;
+        display: none;
         align-items: center;
         padding: 15px;
         background: #f8f9fa;
@@ -529,3 +525,4 @@
 </body>
 
 </html>
+

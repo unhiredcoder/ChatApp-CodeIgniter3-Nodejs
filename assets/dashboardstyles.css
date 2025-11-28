@@ -3,6 +3,7 @@
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
         }
 
         body {
@@ -276,7 +277,7 @@
         }
 
         .current-user-info {
-    display: flex;
+    display: none;
     align-items: center;
     padding: 15px;
     background: #f8f9fa;
@@ -294,9 +295,6 @@
     border-radius: 50%;
 }
 
-.user-details {
-    flex: 1;
-}
 
 .username {
     font-weight: 600;
