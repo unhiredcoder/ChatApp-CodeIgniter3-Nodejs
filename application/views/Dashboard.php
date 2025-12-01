@@ -106,50 +106,20 @@
         socketId: null,
         isTemporary: false
     };
-    // Sample static users data
-    const staticUsers = [{
-        id: 1,
-        name: "Sagar Janjoted",
-        status: "offline",
-        lastSeen: "10:24 AM",
-        lastMessage: "Hey, are we still meeting tomorrow?",
-        unread: 3
-    }, {
-        id: 2,
-        name: "Alex Johnson",
-        status: "offline",
-        lastSeen: "09:15 AM",
-        lastMessage: "Can you review the document?",
-        unread: 0
-    }, {
-        id: 3,
-        name: "Maria Garcia",
-        status: "offline",
-        lastSeen: "Yesterday",
-        lastMessage: "Thanks for your help!",
-        unread: 1
-    }];
+
     // Online users array
     let onlineUsers = [];
     let typingUsers = new Set();
     let typingTimer = null;
     // Initialize the app
     function initApp() {
-        loadStaticUsers();
         // Set up search functionality
         searchUsers.addEventListener('input', filterUsers);
         // Update UI with user info immediately
         myUsername.textContent = myUserData.username;
         myStatus.className = 'status-indicator online';
     }
-    // Load static users list
-    function loadStaticUsers() {
-        staticUsersList.innerHTML = '';
-        staticUsers.forEach(user => {
-            const userItem = createUserItem(user, 'static');
-            staticUsersList.appendChild(userItem);
-        });
-    }
+
     // Load online users list
     function loadOnlineUsers() {
         onlineUsersList.innerHTML = '';
@@ -272,7 +242,7 @@
                 messageElement.className = senderId === myUserData.id ? "message sent" : "message received";
                 messageElement.innerHTML = `
           <div class="message-text">${msg.text}</div>
-          <div class="message-time">${new Date(msg.createdAt).toLocaleTimeString()}</div>
+          <div class="message-time">${new Date(msg.createdAt).toLocaleTimeString([], {hour: '2-digit', minute : '2-digit', hour12: true})}</div>
         `;
                 chatMessages.appendChild(messageElement);
             });
@@ -342,8 +312,7 @@
             messageElement.className = data.senderId === myUserData.id ? 'message sent' : 'message received';
             messageElement.innerHTML = `
       <div class="message-text">${data.message}</div>
-      <div class="message-time">${new Date(data.timestamp).toLocaleTimeString()}</div>
-    `;
+      <div class="message-time">${new Date(data.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</div>`;
             chatMessages.appendChild(messageElement);
             chatMessages.scrollTop = chatMessages.scrollHeight;
             // Remove typing indicator

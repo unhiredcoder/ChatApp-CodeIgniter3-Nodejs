@@ -12,7 +12,7 @@ class DashboardController extends CI_Controller{
         //  Get JWT from session
         $jwt = get_cookie("jwt_token");
         if (!$jwt) {
-            echo "Not logged in!";
+            redirect('AuthController','refresh');
             return;
         }
         // Decode JWT payload
