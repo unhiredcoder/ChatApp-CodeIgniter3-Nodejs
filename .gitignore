@@ -33,5 +33,3 @@ user_guide_src/cilexer/pycilexer.egg-info/*
 .phpintel/*
 
 .phpintel
-
-/application/config/config.php
