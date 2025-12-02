@@ -28,6 +28,7 @@
             </div>
         </div>
         <div class="search-container">
+            <button id="create-group-btn" class="create-group-btn">Create a Group +</button>
             <input type="text" class="search-box" placeholder="Search users..." id="search-users">
         </div>
         <!-- Online Users Section -->
@@ -38,7 +39,6 @@
         <div class="chats-list" id="online-users-list">
             <div class="loading">Loading online users...</div>
         </div>
-    
     </div>
     <!-- Main Chat Area -->
     <div class="chat-area">
@@ -96,7 +96,6 @@
     // Current user and chat state
     let currentUser = null;
     let currentRoom = null;
-    let mySocketId = null;
     // Get username from PHP
     const myRealUsername = <?php echo json_encode($username); ?>;
     const myRealId = <?php echo json_encode($userId); ?>;
@@ -106,7 +105,7 @@
         socketId: null,
         isTemporary: false
     };
-
+    let mySocketId = null;
     // Online users array
     let onlineUsers = [];
     let typingUsers = new Set();
@@ -118,8 +117,9 @@
         // Update UI with user info immediately
         myUsername.textContent = myUserData.username;
         myStatus.className = 'status-indicator online';
+        loadOfflineConversations();
+        loadGroupConversations();
     }
-
     // Load online users list
     function loadOnlineUsers() {
         onlineUsersList.innerHTML = '';
@@ -128,13 +128,130 @@
             return;
         }
         onlineUsers.forEach(user => {
-            // Don't show current user in online list
-            if(user.socketId !== mySocketId) {
-                const userItem = createUserItem(user, 'online');
-                onlineUsersList.appendChild(userItem);
+            if(user.userId !== myUserData.id) {
+                // Check if this user is already in offline list
+                const offlineItem = document.querySelector(`[data-user-id="${user.userId}"][data-type="offline"]`);
+                if(offlineItem) {
+                    // Update offline item to online
+                    offlineItem.dataset.type = 'online';
+                    offlineItem.querySelector('.status-indicator').className = 'status-indicator online';
+                    offlineItem.querySelector('.timestamp').textContent = 'Online';
+                    offlineItem.querySelector('.last-message').textContent = 'Available to chat';
+                    if(!offlineItem.querySelector('.online-pulse')) {
+                        offlineItem.innerHTML += '<div class="online-pulse"></div>';
+                    }
+                } else {
+                    // Create new online item
+                    const userItem = createUserItem({
+                        id: user.userId,
+                        username: user.username,
+                        status: 'online',
+                        lastSeen: 'Online',
+                        lastMessage: 'Available to chat',
+                        socketId: user.socketId
+                    }, 'online');
+                    onlineUsersList.appendChild(userItem);
+                }
             }
         });
     }
+    // Load offline conversations
+    async function loadOfflineConversations() {
+        try {
+            const response = await fetch(`http://10.10.15.140:5555/api/${myUserData.id}/conversations`);
+            const data = await response.json();
+            if(data.conversations && data.conversations.length > 0) {
+                const offlineUsersList = document.getElementById('static-users-list') || createOfflineSection();
+                data.conversations.forEach(conversation => {
+                    // Get the other participant
+                    const otherParticipant = conversation.participants.find(p => p._id !== myUserData.id);
+                    if(otherParticipant) {
+                        // Check if user is already online
+                        const isOnline = onlineUsers.some(u => u.userId === otherParticipant._id);
+                        // Only add if offline
+                        if(!isOnline) {
+                            const user = {
+                                id: otherParticipant._id,
+                                username: otherParticipant.username,
+                                status: 'offline',
+                                lastSeen: 'Offline',
+                                lastMessage: 'Click to chat',
+                                conversationId: conversation._id
+                            };
+                            // Use your existing function
+                            const userItem = createUserItem(user, 'offline');
+                            offlineUsersList.appendChild(userItem);
+                        }
+                    }
+                });
+            }
+        } catch (err) {
+            console.error("Error loading offline conversations:", err);
+        }
+    }
+
+    async function loadGroupConversations() {
+  try {
+    const response = await fetch(`http://10.10.15.140:5555/api/${myUserData.id}/groups`);
+    const data = await response.json();
+    if (data.groups && data.groups.length > 0) {
+      const groupList = document.getElementById('group-chats-list') || createGroupSection();
+      groupList.innerHTML = ''; // clear old entries
+
+      data.groups.forEach(group => {
+        const user = {
+          id: group._id,                  // use conversation id
+          username: group.conversationName,
+          status: 'offline',              // groups don’t have a single online state
+          lastSeen: '—',
+          lastMessage: group.lastMessage?.text || 'Start chatting',
+          conversationId: group._id,
+          roomName: group.roomName,
+          isGroup: true
+        };
+        const userItem = createUserItem(user, 'offline');
+        groupList.appendChild(userItem);
+      });
+    }
+  } catch (err) {
+    console.error("Error loading group conversations:", err);
+  }
+}
+
+    // Create offline section if needed
+    function createOfflineSection() {
+        const sectionHeader = document.createElement('div');
+        sectionHeader.className = 'section-header';
+        sectionHeader.innerHTML = 'Recent Chats';
+        const offlineList = document.createElement('div');
+        offlineList.className = 'chats-list';
+        offlineList.id = 'static-users-list';
+        // Insert after online users section
+        const sidebar = document.querySelector('.sidebar');
+        const onlineList = document.getElementById('online-users-list');
+        sidebar.insertBefore(sectionHeader, onlineList.nextSibling);
+        sidebar.insertBefore(offlineList, sectionHeader.nextSibling);
+        return offlineList;
+    }
+
+    function createGroupSection() {
+  const sectionHeader = document.createElement('div');
+  sectionHeader.className = 'section-header';
+  sectionHeader.innerHTML = 'Groups';
+
+  const groupList = document.createElement('div');
+  groupList.className = 'chats-list';
+  groupList.id = 'group-chats-list';
+
+  // Insert after the recent chats section
+  const sidebar = document.querySelector('.sidebar');
+  const recentSection = document.getElementById('static-users-list') || document.getElementById('online-users-list');
+  sidebar.insertBefore(sectionHeader, recentSection.nextSibling);
+  sidebar.insertBefore(groupList, sectionHeader.nextSibling);
+
+  return groupList;
+}
+
     // Create user list item
     function createUserItem(user, type) {
         const userItem = document.createElement('div');
@@ -142,10 +259,11 @@
         userItem.dataset.userId = user.id;
         userItem.dataset.username = user.name || user.username;
         userItem.dataset.type = type;
+        userItem.dataset.isGroup = user.isGroup ? 'true' : 'false';
         userItem.dataset.socketId = user.socketId || '';
         const status = type === 'online' ? 'online' : (user.status || 'offline');
-        const displayName = user.name || user.username;
-        const avatarId = user.id || (user.socketId ? user.socketId.substring(0, 8) : 'default');
+  const displayName = user.username + (user.isGroup ? ' (Group)' : '');
+  const avatarId = user.isGroup ? `group_${user.id}` : user.id;
         userItem.innerHTML = `
         <div class="profile-pic">
             <img src="https://i.pravatar.cc/150?u=${avatarId}" alt="Profile">
@@ -161,9 +279,101 @@
         ${user.unread > 0 ? `<div class="notification-badge">${user.unread}</div>` : ''}
         ${type === 'online' ? '<div class="online-pulse"></div>' : ''}
         `;
-        userItem.addEventListener('click', () => selectUser(user, type));
+        // Normal click = open chat
+        userItem.addEventListener('click', () => {
+            if(groupMode) {
+                toggleUserSelection(userItem, user);
+            } else {
+                selectUser(user, type);
+            }
+        });
         return userItem;
     }
+    let groupMode = false;
+    let selectedUsers = [];
+    document.getElementById('create-group-btn').addEventListener('click', () => {
+        groupMode = !groupMode;
+        selectedUsers = [];
+        if (groupMode) {
+        selectedUsers = []; // Reset selection
+        alert('Select users for group (click users, then click Create Group button again)');
+    } else {
+        if (selectedUsers.length > 0) {
+            showGroupModal();
+        } else {
+            alert('No users selected');
+        }
+    }
+});
+
+
+    // Group creation modal
+function showGroupModal() {
+    if (selectedUsers.length === 0) {
+        alert('Please select at least one user first');
+        return;
+    }
+    
+    const groupName = prompt('Enter group name:');
+    if (!groupName || groupName.trim() === '') {
+        alert('Group name is required');
+        return;
+    }
+    
+    createGroup(groupName);
+}
+
+// Update toggleUserSelection function
+function toggleUserSelection(item, user) {
+    if (groupMode) {
+        if (selectedUsers.includes(user.id)) {
+            selectedUsers = selectedUsers.filter(id => id !== user.id);
+            item.classList.remove('selected');
+        } else {
+            selectedUsers.push(user.id);
+            item.classList.add('selected');
+        }
+    } else {
+        selectUser(user, item.dataset.type);
+    }
+}
+
+async function createGroup(groupName) {
+  try {
+    const response = await fetch("http://10.10.15.140:5555/api/group", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: groupName,
+        participants: selectedUsers,
+        admin: myUserData.id
+      })
+    });
+    const data = await response.json();
+    if (data.success) {
+      const groupList = document.getElementById('group-chats-list') || createGroupSection();
+      const groupItem = createUserItem({
+        id: data.conversation._id,
+        username: data.conversation.conversationName,
+        status: 'offline',
+        lastSeen: '—',
+        lastMessage: 'Group created',
+        conversationId: data.conversation._id,
+        roomName: data.conversation.roomName,
+        isGroup: true
+      }, 'offline');
+      groupList.prepend(groupItem);
+      groupMode = false;
+      selectedUsers = [];
+    } else {
+      alert("Error creating group");
+    }
+  } catch (err) {
+    console.error("Error creating group:", err);
+    alert("Error creating group");
+  }
+}
+
     // Filter users based on search
     function filterUsers() {
         const searchTerm = searchUsers.value.toLowerCase();
@@ -180,49 +390,55 @@
     console.log("My Id: " + myUserData.id);
     // Select a user to chat with
     function selectUser(user, type) {
-        document.querySelectorAll('.chat-item').forEach(item => {
-            item.classList.remove('active');
-        });
+        document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
         event.currentTarget.classList.add('active');
         currentUser = user;
-        console.log("My Id: " + myUserData.id + ", Selected user Id:" + user.userId);
-        fetch("http://10.10.15.140:5555/api/conversations", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                userId1: myUserData.id,
-                userId2: user.userId
-            })
-        }).then(res => res.json()).then(data => {
-            const {
-                conversation
-            } = data;
-            currentRoom = conversation.roomName;
-            const displayName = user.name || user.username;
+        if(user.conversationId) {
+            // Already have conversation from offline list
+            currentRoom = `chat_${myUserData.id}_${user.id}`; // or use conversation.roomName if you stored it
+            const displayName = user.username;
             currentChatTitle.textContent = displayName;
-            currentChatStatus.textContent = type === "online" ? "Online - Active now" : "Offline";
-            currentChatStatus.style.color = type === "online" ? "#4caf50" : "#757575";
-            const avatarId = user.id || (user.socketId ? user.socketId.substring(0, 8) : "default");
-            currentUserAvatar.src = `https://i.pravatar.cc/150?u=${avatarId}`;
-            currentUserStatus.className = `status-indicator ${
-        type === "online" ? "online" : "offline"
-      }`;
-            socket.emit("joinRoom", {
-                roomName: currentRoom,
-                username: myUserData.username,
-                id: myUserData.id
-            });
-            console.log(`Joined room: ${currentRoom} with user: ${displayName}`);
+            currentChatStatus.textContent = "Offline";
+            currentChatStatus.style.color = "#757575";
+            currentUserAvatar.src = `https://i.pravatar.cc/150?u=${user.id}`;
+            currentUserStatus.className = "status-indicator offline";
             messageInput.disabled = false;
             sendButton.disabled = false;
             messageInput.focus();
-            // Use loadChatHistory for consistency
-            loadChatHistory(conversation._id, displayName);
-        }).catch(err => {
-            console.error("Error fetching conversation/messages:", err);
-        });
+            loadChatHistory(user.conversationId, displayName); // <-- directly load history
+        } else {
+            // Online user: fetch or create conversation
+            fetch("http://10.10.15.140:5555/api/conversation", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    userId1: myUserData.id,
+                    userId2: user.id
+                })
+            }).then(res => res.json()).then(data => {
+                const {
+                    conversation
+                } = data;
+                currentRoom = conversation.roomName;
+                const displayName = user.username;
+                currentChatTitle.textContent = displayName;
+                currentChatStatus.textContent = "Online - Active now";
+                currentChatStatus.style.color = "#4caf50";
+                currentUserAvatar.src = `https://i.pravatar.cc/150?u=${user.id}`;
+                currentUserStatus.className = "status-indicator online";
+                socket.emit("joinRoom", {
+                    roomName: currentRoom,
+                    username: myUserData.username,
+                    id: myUserData.id
+                });
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                messageInput.focus();
+                loadChatHistory(conversation._id, displayName);
+            }).catch(err => console.error("Error fetching conversation/messages:", err));
+        }
     }
 
     function loadChatHistory(conversationId, userName) {
@@ -367,8 +583,42 @@
     socket.on('userListUpdate', (users) => {
         console.log('User list updated:', users);
         onlineUsers = users;
+        // Update all user statuses
+        const allUserItems = document.querySelectorAll('.chat-item');
+        allUserItems.forEach(item => {
+            const userId = item.dataset.userId;
+            const isOnline = onlineUsers.some(u => u.userId === userId && u.userId !== myUserData.id);
+            if(isOnline) {
+                item.dataset.type = 'online';
+                item.querySelector('.status-indicator').className = 'status-indicator online';
+                item.querySelector('.timestamp').textContent = 'Online';
+                item.querySelector('.last-message').textContent = 'Available to chat';
+                if(!item.querySelector('.online-pulse')) {
+                    item.innerHTML += '<div class="online-pulse"></div>';
+                }
+                // Move to online list if in offline list
+                if(item.parentNode.id === 'static-users-list') {
+                    onlineUsersList.appendChild(item);
+                }
+            } else if(userId !== myUserData.id) {
+                item.dataset.type = 'offline';
+                item.querySelector('.status-indicator').className = 'status-indicator offline';
+                item.querySelector('.timestamp').textContent = 'Offline';
+                item.querySelector('.last-message').textContent = 'Click to chat';
+                const pulse = item.querySelector('.online-pulse');
+                if(pulse) pulse.remove();
+                // Move to offline list if in online list
+                if(item.parentNode.id === 'online-users-list') {
+                    const offlineList = document.getElementById('static-users-list');
+                    if(offlineList) {
+                        offlineList.appendChild(item);
+                    }
+                }
+            }
+        });
+        // Keep this line - load online users list
         loadOnlineUsers();
-        onlineCount.textContent = `(${onlineUsers.length})`;
+        onlineCount.textContent = `(${Math.max(0, onlineUsers.length - 1)})`;
     });
     socket.on('chatRoom', (data) => {
         console.log('Chat room event received:', data);
@@ -490,8 +740,28 @@
     .logout-btn:hover {
         background: #c0392b;
     }
+
+    .create-group-btn {
+        margin-right: 8px;
+        padding: 4px 8px;
+        font-size: 16px;
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .create-group-btn:hover {
+        background: #45a049;
+    }
+
+
+    .chat-item.selected {
+  background: #e0f7fa;
+}
+
     </style>
 </body>
 
 </html>
-
