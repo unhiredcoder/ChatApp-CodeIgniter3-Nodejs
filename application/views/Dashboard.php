@@ -1,515 +1,714 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat App Dashboard</title>
+    <title>Chatapp</title>
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
-    <link rel="stylesheet" href="<?php echo base_url("assets/dashboardstyles.css")?>">
+        <link rel="stylesheet" href="<?php echo base_url("assets/dashboardstyles.css")?>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
 </head>
-
 <body>
-    <!-- Sidebar with chat list -->
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <h2>Messages</h2>
-            <a href="<?= site_url('AuthController/Logout') ?>" class="logout-btn">Logout</a>
-        </div>
-        <!-- Current User Info -->
-        <div class="current-user-info">
-            <div class="profile-pic-small">
-                <img src="https://i.pravatar.cc/150?u=<?php echo urlencode($username); ?>" alt="Profile" id="my-avatar">
-                <div class="status-indicator online" id="my-status"></div>
+    <div class="chat-app">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+             
+                <div class="current-user-info">
+                    <div class="user-avatar">
+                        <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($username); ?>&background=6366f1&color=fff&bold=true" alt="Profile" id="my-avatar">
+                        <div class="user-status online" id="my-status"></div>
+                    </div>
+                    <div class="user-details">
+                        <h3 id="my-username"><?php echo htmlspecialchars($username); ?></h3>
+                        <p id="my-user-id">Connecting...</p>
+                    </div>
+                </div>
+                <a href="<?= site_url('AuthController/Logout') ?>" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </a>
             </div>
-            <div class="user-details">
-                <div class="username" id="my-username"><?php echo htmlspecialchars($username); ?></div>
-                <div class="user-id" id="my-user-id">Connecting...</div>
+            
+            <div class="search-create-container">
+                <input type="text" class="search-box" placeholder="Search chats..." id="search-users">
+                <button id="create-group-btn" class="create-group-btn">
+                    <i class="fas fa-users"></i>
+                    New Group
+                </button>
             </div>
-        </div>
-        <div class="search-container">
-            <button id="create-group-btn" class="create-group-btn">Create a Group +</button>
-            <input type="text" class="search-box" placeholder="Search users..." id="search-users">
-        </div>
-        <!-- Online Users Section -->
-        <div class="section-header">
-            <span>Online Users</span>
-            <span class="online-count" id="online-count">0</span>
-        </div>
-        <div class="chats-list" id="online-users-list">
-            <div class="loading">Loading online users...</div>
-        </div>
-    </div>
-    <!-- Main Chat Area -->
-    <div class="chat-area">
-        <div class="chat-header-area">
-            <div class="profile-pic">
-                <img src="https://i.pravatar.cc/150?img=1" alt="Profile" id="current-user-avatar">
-                <div class="status-indicator offline" id="current-user-status"></div>
-            </div>
-            <div class="chat-header-info">
-                <div class="chat-title" id="current-chat-title">Select a chat</div>
-                <div class="chat-status" id="current-chat-status">Select a user to start chatting</div>
-            </div>
-            <div class="typing-indicator" id="typing-indicator" style="display: none;"></div>
-        </div>
-        <div class="chat-messages" id="chat-messages">
-            <div class="welcome-message">
-                <div class="message received">
-                    <div class="message-text">Welcome to the chat! Select a user from the sidebar to start messaging.</div>
-                    <div class="message-time">Just now</div>
+            
+            <div class="chats-container">
+                <!-- Online Users -->
+                <div class="section-header">
+                    <h3>Online Now</h3>
+                    <span class="online-count" id="online-count">0</span>
+                </div>
+                <div class="chat-list" id="online-users-list">
+                    <div class="loading">Loading online users...</div>
+                </div>
+                
+                <!-- All Conversations -->
+                <div class="section-header">
+                    <h3>Recent Chats</h3>
+                </div>
+                <div class="chat-list" id="conversations-list">
+                    <div class="loading">Loading conversations...</div>
+                </div>
+                
+                <!-- Group Chats -->
+                <div class="section-header" id="groups-header" style="display: none;">
+                    <h3>Group Chats</h3>
+                </div>
+                <div class="chat-list" id="group-chats-list">
+                    <!-- Groups will be loaded here -->
                 </div>
             </div>
         </div>
-        <div class="chat-input-area">
-            <input type="text" class="message-input" id="message-input" placeholder="Type a message..." disabled>
-            <button class="send-button" id="send-button" disabled>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-            </button>
+        
+        <!-- Main Chat Area -->
+        <div class="main-chat" id="main-chat">
+            <div class="welcome-screen" id="welcome-screen">
+                <div class="welcome-icon">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <h2>Welcome <?php echo htmlspecialchars($username); ?>  </h2>
+                <p>Select a conversation from the sidebar to start chatting. You can message individual users or create group chats.</p>
+            </div>
+            
+            <div class="chat-header-area" id="chat-header" style="display: none;">
+                <div class="chat-header-avatar">
+                    <img src="https://ui-avatars.com/api/?name=User&background=94a3b8&color=fff" alt="Profile" id="current-user-avatar">
+                </div>
+                <div class="chat-header-info">
+                    <h2 id="current-chat-title">Select a chat</h2>
+                    <p id="current-chat-status">Select a user to start chatting</p>
+                    <div class="typing-indicator" id="typing-indicator" style="display: none;"></div>
+                </div>
+              
+            </div>
+            
+            <div class="messages-container" id="chat-messages" style="display: none;">
+               
+            </div>
+            
+            <div class="chat-input-area" id="chat-input-area" style="display: none;">
+                <div class="file-attachment">
+                    <input type="file" id="attachment" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
+                    <button class="attach-btn" id="attachments">
+                        <i class="fas fa-paperclip"></i>
+                    </button>
+                </div>
+                <span id="file-name" class="file-name"></span>
+                
+                <input type="text" class="message-input" id="message-input" placeholder="Type your message here..." disabled>
+                <button class="send-button" id="send-button" disabled>
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
         </div>
     </div>
+    
+    <!-- Group Creation Modal -->
+    <div class="modal-overlay" id="group-modal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Create New Group</h3>
+                <button class="close-modal" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="modal-input" id="group-name" placeholder="Enter group name (e.g., 'Project Team')">
+                <div class="selected-users" id="selected-users-list">
+                    <div class="hint">No users selected yet</div>
+                </div>
+                <div class="users-list" id="available-users-list">
+                    
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-group">Cancel</button>
+                <button class="btn btn-primary" id="create-group-final">Create Group</button>
+            </div>
+        </div>
+    </div>
+
     <script>
     // Socket.IO connection
-    const socket = io("http://10.10.15.140:5555", {
+    const socket = io("http://10.10.15.140:7360", {
         withCredentials: true
     });
+    
     // DOM elements
     const messageInput = document.getElementById('message-input');
     const sendButton = document.getElementById('send-button');
     const chatMessages = document.getElementById('chat-messages');
-    const staticUsersList = document.getElementById('static-users-list');
     const onlineUsersList = document.getElementById('online-users-list');
+    const conversationsList = document.getElementById('conversations-list');
+    const groupChatsList = document.getElementById('group-chats-list');
     const currentChatTitle = document.getElementById('current-chat-title');
     const currentChatStatus = document.getElementById('current-chat-status');
     const currentUserAvatar = document.getElementById('current-user-avatar');
-    const currentUserStatus = document.getElementById('current-user-status');
+    const typingIndicator = document.getElementById('typing-indicator');
     const onlineCount = document.getElementById('online-count');
     const myUsername = document.getElementById('my-username');
     const myUserId = document.getElementById('my-user-id');
     const myAvatar = document.getElementById('my-avatar');
     const myStatus = document.getElementById('my-status');
-    const typingIndicator = document.getElementById('typing-indicator');
     const searchUsers = document.getElementById('search-users');
+    const createGroupBtn = document.getElementById('create-group-btn');
+    const groupModal = document.getElementById('group-modal');
+    const closeModal = document.getElementById('close-modal');
+    const cancelGroupBtn = document.getElementById('cancel-group');
+    const createGroupFinalBtn = document.getElementById('create-group-final');
+    const welcomeScreen = document.getElementById('welcome-screen');
+    const chatHeader = document.getElementById('chat-header');
+    const chatInputArea = document.getElementById('chat-input-area');
+    const groupNameInput = document.getElementById('group-name');
+    const selectedUsersList = document.getElementById('selected-users-list');
+    const availableUsersList = document.getElementById('available-users-list');
+    
     // Current user and chat state
     let currentUser = null;
     let currentRoom = null;
+    let currentConversation = null;
+    let currentChatType = null; // 'private' or 'group'
+    
     // Get username from PHP
     const myRealUsername = <?php echo json_encode($username); ?>;
     const myRealId = <?php echo json_encode($userId); ?>;
+    
     let myUserData = {
         id: myRealId,
         username: myRealUsername,
-        socketId: null,
-        isTemporary: false
+        socketId: null
     };
-    let mySocketId = null;
-    // Online users array
+    
+    // Users and conversations data
     let onlineUsers = [];
+    let allConversations = [];
+    let allUsers = [];
     let typingUsers = new Set();
     let typingTimer = null;
+    
+    // Group creation state
+    let selectedUsersForGroup = [];
+    
     // Initialize the app
     function initApp() {
         // Set up search functionality
-        searchUsers.addEventListener('input', filterUsers);
-        // Update UI with user info immediately
-        myUsername.textContent = myUserData.username;
-        myStatus.className = 'status-indicator online';
-        loadOfflineConversations();
-        loadGroupConversations();
+        searchUsers.addEventListener('input', filterChats);
+        
+        // Authenticate with socket
+        socket.emit('authenticate', {
+            userId: myUserData.id,
+            username: myUserData.username
+        });
+        
+        // Load initial data
+        loadConversations();
+        loadAllUsers();
+        
+        // Set up event listeners
+        setupEventListeners();
+        
+        console.log("App initialized for user:", myUserData.username);
     }
-    // Load online users list
-    function loadOnlineUsers() {
-        onlineUsersList.innerHTML = '';
-        if(onlineUsers.length === 0) {
-            onlineUsersList.innerHTML = '<div class="no-users">No users online</div>';
-            return;
-        }
-        onlineUsers.forEach(user => {
-            if(user.userId !== myUserData.id) {
-                // Check if this user is already in offline list
-                const offlineItem = document.querySelector(`[data-user-id="${user.userId}"][data-type="offline"]`);
-                if(offlineItem) {
-                    // Update offline item to online
-                    offlineItem.dataset.type = 'online';
-                    offlineItem.querySelector('.status-indicator').className = 'status-indicator online';
-                    offlineItem.querySelector('.timestamp').textContent = 'Online';
-                    offlineItem.querySelector('.last-message').textContent = 'Available to chat';
-                    if(!offlineItem.querySelector('.online-pulse')) {
-                        offlineItem.innerHTML += '<div class="online-pulse"></div>';
-                    }
+    
+    // Set up event listeners
+    function setupEventListeners() {
+        // Message sending
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        messageInput.addEventListener('input', handleTyping);
+        
+        // File attachment
+        document.getElementById('attachments').addEventListener('click', () => {
+            document.getElementById('attachment').click();
+        });
+        document.getElementById('attachment').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('file-name').textContent = file.name;
+            } else {
+                document.getElementById('file-name').textContent = '';
+            }
+        });
+        
+        // Group creation modal
+        createGroupBtn.addEventListener('click', showGroupModal);
+        closeModal.addEventListener('click', () => groupModal.style.display = 'none');
+        cancelGroupBtn.addEventListener('click', () => groupModal.style.display = 'none');
+        createGroupFinalBtn.addEventListener('click', createGroup);
+        
+        // Socket event listeners
+        setupSocketListeners();
+    }
+    
+    // Set up socket listeners
+    function setupSocketListeners() {
+        socket.on('connect', () => {
+            myUserData.socketId = socket.id;
+            myUserId.textContent = `ID: ${myUserData.id.substring(0, 8)}...`;
+            myStatus.className = 'user-status online';
+            
+            console.log('Connected to socket with ID:', socket.id);
+        });
+        
+        socket.on('userListUpdate', (users) => {
+            console.log('Online users updated:', users);
+            onlineUsers = users;
+            updateOnlineUsersDisplay();
+            updateUserStatusInLists();
+        });
+        
+        socket.on('chatRoom', (data) => {
+            console.log('New message received:', data);
+            if (data.room === currentRoom && data.senderId !== myUserData.id) {
+                displayMessage(data.message, false);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // Update conversation in sidebar
+                updateConversationLastMessage(currentConversation._id, data.message);
+            }
+        });
+        
+        socket.on('userTyping', (data) => {
+            console.log("typing socket",data)
+            if (data.room === currentRoom) {
+                if (data.isTyping) {
+                    typingUsers.add(data.username);
                 } else {
-                    // Create new online item
-                    const userItem = createUserItem({
-                        id: user.userId,
-                        username: user.username,
-                        status: 'online',
-                        lastSeen: 'Online',
-                        lastMessage: 'Available to chat',
-                        socketId: user.socketId
-                    }, 'online');
-                    onlineUsersList.appendChild(userItem);
+                    typingUsers.delete(data.username);
+                }
+                updateTypingIndicator();
+            }
+        });
+    }
+    
+    // Load all conversations
+    async function loadConversations() {
+        try {
+            const response = await fetch(`http://10.10.15.140:7360/api/${myUserData.id}/conversations`);
+            const data = await response.json();
+            
+            if (data.conversations && data.conversations.length > 0) {
+                allConversations = data.conversations;
+                displayConversations(data.conversations);
+                
+                // Load groups separately
+                loadGroups();
+            } else {
+                conversationsList.innerHTML = '<div class="no-chats">No conversations yet</div>';
+            }
+        } catch (err) {
+            console.error("Error loading conversations:", err);
+            conversationsList.innerHTML = '<div class="error">Error loading conversations</div>';
+        }
+    }
+    
+    // Load groups
+    async function loadGroups() {
+        try {
+            const response = await fetch(`http://10.10.15.140:7360/api/${myUserData.id}/groups`);
+            const data = await response.json();
+            
+            if (data.groups && data.groups.length > 0) {
+                displayGroups(data.groups);
+                document.getElementById('groups-header').style.display = 'block';
+            }
+        } catch (err) {
+            console.error("Error loading groups:", err);
+        }
+    }
+    
+    // Load all users for group creation
+    async function loadAllUsers() {
+  try {
+    // FIXED URL
+    const response = await fetch(`http://10.10.15.140:7360/api/users/chat/${myUserData.id}`);
+    const data = await response.json();
+    
+    if (data.users && data.users.length > 0) {
+      allUsers = data.users;
+    }
+  } catch (err) {
+    console.error("Error loading all users:", err);
+  }
+}
+    // Display conversations
+    function displayConversations(conversations) {
+        conversationsList.innerHTML = '';
+        
+        conversations.forEach(conv => {
+            if (!conv.isGroup) {
+                // Private conversation
+                const otherParticipant = conv.participants?.find(p => p._id !== myUserData.id);
+                if (otherParticipant) {
+                    const isOnline = onlineUsers.some(u => u.userId === otherParticipant._id);
+                    
+                    const conversationItem = createConversationItem({
+                        id: conv._id,
+                        name: otherParticipant.username,
+                        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(otherParticipant.username)}&background=random&color=fff`,
+                        lastMessage: conv.lastMessage?.text || 'Start chatting',
+                        time: formatTime(conv.updatedAt),
+                        type: 'private',
+                        userId: otherParticipant._id,
+                        isOnline: isOnline,
+                        unread: 0
+                    });
+                    
+                    conversationsList.appendChild(conversationItem);
                 }
             }
         });
     }
-    // Load offline conversations
-    async function loadOfflineConversations() {
-        try {
-            const response = await fetch(`http://10.10.15.140:5555/api/${myUserData.id}/conversations`);
-            const data = await response.json();
-            if(data.conversations && data.conversations.length > 0) {
-                const offlineUsersList = document.getElementById('static-users-list') || createOfflineSection();
-                data.conversations.forEach(conversation => {
-                    // Get the other participant
-                    const otherParticipant = conversation.participants.find(p => p._id !== myUserData.id);
-                    if(otherParticipant) {
-                        // Check if user is already online
-                        const isOnline = onlineUsers.some(u => u.userId === otherParticipant._id);
-                        // Only add if offline
-                        if(!isOnline) {
-                            const user = {
-                                id: otherParticipant._id,
-                                username: otherParticipant.username,
-                                status: 'offline',
-                                lastSeen: 'Offline',
-                                lastMessage: 'Click to chat',
-                                conversationId: conversation._id
-                            };
-                            // Use your existing function
-                            const userItem = createUserItem(user, 'offline');
-                            offlineUsersList.appendChild(userItem);
-                        }
-                    }
-                });
-            }
-        } catch (err) {
-            console.error("Error loading offline conversations:", err);
-        }
+    
+    // Display groups
+    function displayGroups(groups) {
+        groupChatsList.innerHTML = '';
+        
+        groups.forEach(group => {
+            const groupItem = createConversationItem({
+                id: group._id,
+                name: group.groupName,
+                avatar: group.groupImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(group.groupName)}&background=6366f1&color=fff`,
+                lastMessage: group.lastMessage?.text || 'No messages yet',
+                time: formatTime(group.updatedAt),
+                type: 'group',
+                participantsCount: group.participants?.length || 0,
+                unread: 0
+            });
+            
+            groupChatsList.appendChild(groupItem);
+        });
     }
-
-    async function loadGroupConversations() {
-  try {
-    const response = await fetch(`http://10.10.15.140:5555/api/${myUserData.id}/groups`);
-    const data = await response.json();
-    if (data.groups && data.groups.length > 0) {
-      const groupList = document.getElementById('group-chats-list') || createGroupSection();
-      groupList.innerHTML = ''; // clear old entries
-
-      data.groups.forEach(group => {
-        const user = {
-          id: group._id,                  // use conversation id
-          username: group.conversationName,
-          status: 'offline',              // groups don’t have a single online state
-          lastSeen: '—',
-          lastMessage: group.lastMessage?.text || 'Start chatting',
-          conversationId: group._id,
-          roomName: group.roomName,
-          isGroup: true
-        };
-        const userItem = createUserItem(user, 'offline');
-        groupList.appendChild(userItem);
-      });
-    }
-  } catch (err) {
-    console.error("Error loading group conversations:", err);
-  }
-}
-
-    // Create offline section if needed
-    function createOfflineSection() {
-        const sectionHeader = document.createElement('div');
-        sectionHeader.className = 'section-header';
-        sectionHeader.innerHTML = 'Recent Chats';
-        const offlineList = document.createElement('div');
-        offlineList.className = 'chats-list';
-        offlineList.id = 'static-users-list';
-        // Insert after online users section
-        const sidebar = document.querySelector('.sidebar');
-        const onlineList = document.getElementById('online-users-list');
-        sidebar.insertBefore(sectionHeader, onlineList.nextSibling);
-        sidebar.insertBefore(offlineList, sectionHeader.nextSibling);
-        return offlineList;
-    }
-
-    function createGroupSection() {
-  const sectionHeader = document.createElement('div');
-  sectionHeader.className = 'section-header';
-  sectionHeader.innerHTML = 'Groups';
-
-  const groupList = document.createElement('div');
-  groupList.className = 'chats-list';
-  groupList.id = 'group-chats-list';
-
-  // Insert after the recent chats section
-  const sidebar = document.querySelector('.sidebar');
-  const recentSection = document.getElementById('static-users-list') || document.getElementById('online-users-list');
-  sidebar.insertBefore(sectionHeader, recentSection.nextSibling);
-  sidebar.insertBefore(groupList, sectionHeader.nextSibling);
-
-  return groupList;
-}
-
-    // Create user list item
-    function createUserItem(user, type) {
-        const userItem = document.createElement('div');
-        userItem.className = 'chat-item';
-        userItem.dataset.userId = user.id;
-        userItem.dataset.username = user.name || user.username;
-        userItem.dataset.type = type;
-        userItem.dataset.isGroup = user.isGroup ? 'true' : 'false';
-        userItem.dataset.socketId = user.socketId || '';
-        const status = type === 'online' ? 'online' : (user.status || 'offline');
-  const displayName = user.username + (user.isGroup ? ' (Group)' : '');
-  const avatarId = user.isGroup ? `group_${user.id}` : user.id;
-        userItem.innerHTML = `
-        <div class="profile-pic">
-            <img src="https://i.pravatar.cc/150?u=${avatarId}" alt="Profile">
-            <div class="status-indicator ${status}"></div>
-        </div>
-        <div class="chat-info">
-            <div class="chat-header">
-                <div class="contact-name">${displayName}</div>
-                <div class="timestamp">${type === 'online' ? 'Online' : (user.lastSeen || 'Offline')}</div>
+    
+    // Create conversation list item
+    function createConversationItem(data) {
+        const item = document.createElement('div');
+        item.className = `chat-item ${data.unread > 0 ? 'unread' : ''}`;
+        item.dataset.id = data.id;
+        item.dataset.type = data.type;
+        item.dataset.userId = data.userId || '';
+        
+        item.innerHTML = `
+            <div class="chat-avatar ${data.type === 'group' ? 'group' : ''}">
+                <img src="${data.avatar}" alt="${data.name}">
+                ${data.type === 'private' ? `<div class="chat-status ${data.isOnline ? 'online' : 'offline'}"></div>` : ''}
             </div>
-            <div class="last-message">${user.lastMessage || (type === 'online' ? 'Available to chat' : 'Offline')}</div>
-        </div>
-        ${user.unread > 0 ? `<div class="notification-badge">${user.unread}</div>` : ''}
-        ${type === 'online' ? '<div class="online-pulse"></div>' : ''}
+            <div class="chat-info">
+                <div class="chat-header">
+                    <div class="chat-name">${data.name}</div>
+                    <div class="chat-time">${data.time}</div>
+                </div>
+                <div class="last-message">${data.lastMessage}</div>
+                ${data.type === 'group' ? `<div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">${data.participantsCount} members</div>` : ''}
+            </div>
+            ${data.unread > 0 ? `<div class="unread-badge">${data.unread}</div>` : ''}
         `;
-        // Normal click = open chat
-        userItem.addEventListener('click', () => {
-            if(groupMode) {
-                toggleUserSelection(userItem, user);
-            } else {
-                selectUser(user, type);
-            }
+        
+        item.addEventListener('click', () => {
+            selectConversation(data);
         });
-        return userItem;
-    }
-    let groupMode = false;
-    let selectedUsers = [];
-    document.getElementById('create-group-btn').addEventListener('click', () => {
-        groupMode = !groupMode;
-        selectedUsers = [];
-        if (groupMode) {
-        selectedUsers = []; // Reset selection
-        alert('Select users for group (click users, then click Create Group button again)');
-    } else {
-        if (selectedUsers.length > 0) {
-            showGroupModal();
-        } else {
-            alert('No users selected');
-        }
-    }
-});
-
-
-    // Group creation modal
-function showGroupModal() {
-    if (selectedUsers.length === 0) {
-        alert('Please select at least one user first');
-        return;
+        
+        return item;
     }
     
-    const groupName = prompt('Enter group name:');
-    if (!groupName || groupName.trim() === '') {
-        alert('Group name is required');
-        return;
-    }
-    
-    createGroup(groupName);
-}
-
-// Update toggleUserSelection function
-function toggleUserSelection(item, user) {
-    if (groupMode) {
-        if (selectedUsers.includes(user.id)) {
-            selectedUsers = selectedUsers.filter(id => id !== user.id);
-            item.classList.remove('selected');
-        } else {
-            selectedUsers.push(user.id);
-            item.classList.add('selected');
-        }
-    } else {
-        selectUser(user, item.dataset.type);
-    }
-}
-
-async function createGroup(groupName) {
-  try {
-    const response = await fetch("http://10.10.15.140:5555/api/group", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: groupName,
-        participants: selectedUsers,
-        admin: myUserData.id
-      })
-    });
-    const data = await response.json();
-    if (data.success) {
-      const groupList = document.getElementById('group-chats-list') || createGroupSection();
-      const groupItem = createUserItem({
-        id: data.conversation._id,
-        username: data.conversation.conversationName,
-        status: 'offline',
-        lastSeen: '—',
-        lastMessage: 'Group created',
-        conversationId: data.conversation._id,
-        roomName: data.conversation.roomName,
-        isGroup: true
-      }, 'offline');
-      groupList.prepend(groupItem);
-      groupMode = false;
-      selectedUsers = [];
-    } else {
-      alert("Error creating group");
-    }
-  } catch (err) {
-    console.error("Error creating group:", err);
-    alert("Error creating group");
-  }
-}
-
-    // Filter users based on search
-    function filterUsers() {
-        const searchTerm = searchUsers.value.toLowerCase();
-        const allUserItems = document.querySelectorAll('.chat-item');
-        allUserItems.forEach(item => {
-            const userName = item.dataset.username.toLowerCase();
-            if(userName.includes(searchTerm)) {
-                item.style.display = 'flex';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    }
-    console.log("My Id: " + myUserData.id);
-    // Select a user to chat with
-    function selectUser(user, type) {
+    // Select conversation (private or group)
+    async function selectConversation(data) {
+        // Remove active class from all items
         document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
         event.currentTarget.classList.add('active');
-        currentUser = user;
-        if(user.conversationId) {
-            // Already have conversation from offline list
-            currentRoom = `chat_${myUserData.id}_${user.id}`; // or use conversation.roomName if you stored it
-            const displayName = user.username;
-            currentChatTitle.textContent = displayName;
-            currentChatStatus.textContent = "Offline";
-            currentChatStatus.style.color = "#757575";
-            currentUserAvatar.src = `https://i.pravatar.cc/150?u=${user.id}`;
-            currentUserStatus.className = "status-indicator offline";
-            messageInput.disabled = false;
-            sendButton.disabled = false;
-            messageInput.focus();
-            loadChatHistory(user.conversationId, displayName); // <-- directly load history
-        } else {
-            // Online user: fetch or create conversation
-            fetch("http://10.10.15.140:5555/api/conversation", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    userId1: myUserData.id,
-                    userId2: user.id
-                })
-            }).then(res => res.json()).then(data => {
-                const {
-                    conversation
-                } = data;
-                currentRoom = conversation.roomName;
-                const displayName = user.username;
-                currentChatTitle.textContent = displayName;
-                currentChatStatus.textContent = "Online - Active now";
-                currentChatStatus.style.color = "#4caf50";
-                currentUserAvatar.src = `https://i.pravatar.cc/150?u=${user.id}`;
-                currentUserStatus.className = "status-indicator online";
-                socket.emit("joinRoom", {
-                    roomName: currentRoom,
-                    username: myUserData.username,
-                    id: myUserData.id
+        
+        // Hide welcome screen, show chat
+        welcomeScreen.style.display = 'none';
+        chatHeader.style.display = 'flex';
+        chatMessages.style.display = 'block';
+        chatInputArea.style.display = 'flex';
+        
+        // Set current conversation data
+        currentChatType = data.type;
+        
+        if (data.type === 'private') {
+            // Private chat
+            currentUser = {
+                id: data.userId,
+                username: data.name,
+                avatar: data.avatar
+            };
+            
+            currentChatTitle.textContent = data.name;
+            currentChatStatus.textContent = data.isOnline ? 'Online' : 'Offline';
+            currentChatStatus.innerHTML = data.isOnline ? 
+                '<i class="fas fa-circle" style="color: #10b981; font-size: 10px;"></i> Online' : 
+                '<i class="fas fa-circle" style="color: #94a3b8; font-size: 10px;"></i> Offline';
+            
+            // Get or create conversation
+            try {
+                const response = await fetch('http://10.10.15.140:7360/api/conversation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId1: myUserData.id,
+                        userId2: data.userId
+                    })
                 });
-                messageInput.disabled = false;
-                sendButton.disabled = false;
-                messageInput.focus();
-                loadChatHistory(conversation._id, displayName);
-            }).catch(err => console.error("Error fetching conversation/messages:", err));
+                
+                const convData = await response.json();
+                currentConversation = convData.conversation;
+                currentRoom = currentConversation.roomName;
+            } catch (err) {
+                console.error('Error getting conversation:', err);
+                return;
+            }
+        } else {
+            // Group chat
+            currentUser = {
+                id: data.id,
+                username: data.name,
+                avatar: data.avatar,
+                isGroup: true
+            };
+            
+            currentChatTitle.textContent = data.name;
+            currentChatStatus.textContent = `${data.participantsCount} members`;
+            currentChatStatus.innerHTML = `<i class="fas fa-users" style="color: #6366f1;"></i> ${data.participantsCount} members`;
+            
+            currentConversation = { _id: data.id, roomName: `group_${data.id}` };
+            currentRoom = `group_${data.id}`;
+        }
+        
+        // Update avatar
+        currentUserAvatar.src = data.avatar;
+        
+        // Join socket room
+        socket.emit('joinRoom', {
+            roomName: currentRoom,
+            username: myUserData.username,
+            id: myUserData.id
+        });
+        
+        // Enable message input
+        messageInput.disabled = false;
+        sendButton.disabled = false;
+        messageInput.focus();
+        
+        // Load chat history
+        loadChatHistory(currentConversation._id);
+    }
+    
+    // Load chat history
+    async function loadChatHistory(conversationId) {
+        chatMessages.innerHTML = '';
+        
+        try {
+            const response = await fetch(`http://10.10.15.140:7360/api/messages/${conversationId}`);
+            const messages = await response.json();
+            
+            if (messages.length === 0) {
+                const welcomeMsg = document.createElement('div');
+                welcomeMsg.className = 'message received';
+                welcomeMsg.innerHTML = `
+                    <div class="message-content">
+                        Start your conversation with ${currentUser.username}! Send your first message.
+                    </div>
+                    <div class="message-time">Just now</div>
+                `;
+                chatMessages.appendChild(welcomeMsg);
+            } else {
+                messages.forEach(msg => {
+                    displayMessage(msg, msg.sender._id === myUserData.id);
+                });
+            }
+            
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        } catch (err) {
+            console.error('Error loading chat history:', err);
         }
     }
-
-    function loadChatHistory(conversationId, userName) {
-        chatMessages.innerHTML = "";
-        const welcomeMessage = document.createElement("div");
-        welcomeMessage.className = "message received";
-        welcomeMessage.innerHTML = `
-    <div class="message-text">You are now chatting with <strong>${userName}</strong>. Start the conversation!</div>
-    <div class="message-time">Just now</div>
-  `;
-        chatMessages.appendChild(welcomeMessage);
-        fetch(`http://10.10.15.140:5555/api/messages/${conversationId}`).then(res => res.json()).then(messages => {
-            messages.forEach(msg => {
-                // normalize sender id check
-                const senderId = typeof msg.sender === "object" ? msg.sender._id : msg.sender;
-                const messageElement = document.createElement("div");
-                messageElement.className = senderId === myUserData.id ? "message sent" : "message received";
-                messageElement.innerHTML = `
-          <div class="message-text">${msg.text}</div>
-          <div class="message-time">${new Date(msg.createdAt).toLocaleTimeString([], {hour: '2-digit', minute : '2-digit', hour12: true})}</div>
-        `;
-                chatMessages.appendChild(messageElement);
+    
+    // Display a message
+    function displayMessage(msg, isSent) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+        
+        let content = `<div class="message-content">${msg.text || ''}</div>`;
+        
+        // Add attachments if present
+        if (msg.attachments && msg.attachments.length > 0) {
+            msg.attachments.forEach(att => {
+                const secureUrl = `http://10.10.15.140:7360/api/messages/file/${msg._id}/${att.fileUrl}?userId=${myUserData.id}`;
+                
+                if (att.fileType.startsWith('image/')) {
+                    content += `<div class="attachment"><img src="${secureUrl}" alt="${att.fileName}"></div>`;
+                } else if (att.fileType.startsWith('video/')) {
+                    content += `<div class="attachment"><video controls><source src="${secureUrl}" type="${att.fileType}"></video></div>`;
+                } else {
+                    content += `<a href="${secureUrl}" target="_blank" class="attachment-file">
+                        <i class="fas fa-file"></i>
+                        <span>${att.fileName}</span>
+                    </a>`;
+                }
             });
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }).catch(err => console.error("Error loading chat history:", err));
+        }
+        
+        const time = new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        content += `<div class="message-time">${time}</div>`;
+        
+        messageDiv.innerHTML = content;
+        chatMessages.appendChild(messageDiv);
     }
+    
     // Send message
-    function sendMessage() {
+    async function sendMessage() {
         const message = messageInput.value.trim();
-        if(message && currentUser && currentRoom) {
-            console.log(`Sending message to room ${currentRoom}: ${message}`);
-            // Emit message to server
+        const file = document.getElementById('attachment').files[0];
+        
+        if (!message && !file) return;
+        
+        if (!currentConversation) {
+            alert('Please select a conversation first');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('text', message);
+        formData.append('senderId', myUserData.id);
+        formData.append('conversationId', currentConversation._id);
+        
+        if (file) {
+            formData.append('file', file);
+        }
+        
+        try {
+            const response = await fetch('http://10.10.15.140:7360/api/messages', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const savedMessage = await response.json();
+            
+            // Display the sent message immediately
+            displayMessage(savedMessage, true);
+            
+            // Emit socket event
             socket.emit('chatRoom', {
                 room: currentRoom,
                 senderId: myUserData.id,
-                name: myUserData.username,
-                message: message
+                message: savedMessage
             });
-            // Create sent message element
-            const messageElement = document.createElement('div');
-            messageElement.className = 'message sent';
-            messageElement.innerHTML = `
-        <div class="message-text">${message}</div>
-        <div class="message-time">${getCurrentTime()}</div>
-        `;
-            // Add to chat
-            chatMessages.appendChild(messageElement);
-            // Clear input
+            
+            // Clear inputs
             messageInput.value = '';
+            document.getElementById('attachment').value = '';
+            document.getElementById('file-name').textContent = '';
+            
             // Scroll to bottom
             chatMessages.scrollTop = chatMessages.scrollHeight;
-            // Stop typing indicator
-            if(typingTimer) clearTimeout(typingTimer);
-            socket.emit('typing', {
-                room: currentRoom,
-                username: myUserData.username,
-                isTyping: false
-            });
+            
+            // Update conversation list
+            updateConversationLastMessage(currentConversation._id, savedMessage);
+            
+        } catch (err) {
+            console.error('Error sending message:', err);
+            alert('Error sending message');
         }
     }
+    
+    // Update conversation last message in sidebar
+    function updateConversationLastMessage(conversationId, message) {
+        const conversationItem = document.querySelector(`.chat-item[data-id="${conversationId}"]`);
+        if (conversationItem) {
+            const lastMessageEl = conversationItem.querySelector('.last-message');
+            const timeEl = conversationItem.querySelector('.chat-time');
+            
+            if (lastMessageEl) {
+                lastMessageEl.textContent = message.text || 'Attachment';
+            }
+            if (timeEl) {
+                timeEl.textContent = formatTime(message.createdAt);
+            }
+        }
+    }
+    
+    // Update online users display
+    function updateOnlineUsersDisplay() {
+        onlineUsersList.innerHTML = '';
+        onlineCount.textContent = onlineUsers.length;
+        
+        if (onlineUsers.length === 0) {
+            onlineUsersList.innerHTML = '<div class="no-users">No users online</div>';
+            return;
+        }
+        
+        // Filter out current user
+        const otherUsers = onlineUsers.filter(u => u.userId !== myUserData.id);
+        
+        if (otherUsers.length === 0) {
+            onlineUsersList.innerHTML = '<div class="no-users">No other users online</div>';
+            return;
+        }
+        
+        otherUsers.forEach(user => {
+            const userItem = createConversationItem({
+                id: `online_${user.userId}`,
+                name: user.username,
+                avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=10b981&color=fff`,
+                lastMessage: 'Click to chat',
+                time: 'Online',
+                type: 'private',
+                userId: user.userId,
+                isOnline: true,
+                unread: 0
+            });
+            
+            onlineUsersList.appendChild(userItem);
+        });
+    }
+    
+    // Update user status in conversation lists
+    function updateUserStatusInLists() {
+        document.querySelectorAll('.chat-item[data-type="private"]').forEach(item => {
+            const userId = item.dataset.userId;
+            const isOnline = onlineUsers.some(u => u.userId === userId);
+            const statusEl = item.querySelector('.chat-status');
+            
+            if (statusEl) {
+                statusEl.className = `chat-status ${isOnline ? 'online' : 'offline'}`;
+            }
+            
+            // Update time display for online users
+            const timeEl = item.querySelector('.chat-time');
+            if (timeEl && isOnline) {
+                timeEl.textContent = 'Online';
+            }
+        });
+    }
+    
     // Handle typing
     function handleTyping() {
-        if(currentRoom && currentUser) {
+            console.log("current socket",currentRoom)
+
+        if (currentRoom) {
             socket.emit('typing', {
                 room: currentRoom,
                 username: myUserData.username,
                 isTyping: true
             });
-            // Clear previous timer
-            if(typingTimer) clearTimeout(typingTimer);
-            // Set timer to stop typing indicator after 1 second
+            
+            if (typingTimer) clearTimeout(typingTimer);
+            
             typingTimer = setTimeout(() => {
                 socket.emit('typing', {
                     room: currentRoom,
@@ -519,249 +718,225 @@ async function createGroup(groupName) {
             }, 1000);
         }
     }
-    // Receive message
-    function receiveMessage(data) {
-        console.log('Received message:', data);
-        // Only show message if it's for the current room and not from current user
-        if(data.room === currentRoom && data.senderId !== myUserData.id) {
-            const messageElement = document.createElement('div');
-            messageElement.className = data.senderId === myUserData.id ? 'message sent' : 'message received';
-            messageElement.innerHTML = `
-      <div class="message-text">${data.message}</div>
-      <div class="message-time">${new Date(data.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}</div>`;
-            chatMessages.appendChild(messageElement);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-            // Remove typing indicator
-            typingUsers.delete(data.name);
-            updateTypingIndicator();
-        } else if(data.room !== currentRoom) {
-            console.log(`Message received for different room: ${data.room}, current room: ${currentRoom}`);
-        }
-    }
+    
     // Update typing indicator
     function updateTypingIndicator() {
-        if(typingUsers.size > 0) {
+        if (typingUsers.size > 0) {
             const names = Array.from(typingUsers);
-            const text = names.length === 1 ? `${names[0]} is typing...` : `${names.join(', ')} are typing...`;
+            console.log("updatetypingindicator",names)
+            const text = names.length === 1 ? 
+                `${names[0]} is typing...` : 
+                `${names.length} people are typing...`;
+                console.log(text)
             typingIndicator.textContent = text;
             typingIndicator.style.display = 'block';
         } else {
             typingIndicator.style.display = 'none';
         }
     }
-    // Get current time in HH:MM AM/PM format
-    function getCurrentTime() {
-        const now = new Date();
-        let hours = now.getHours();
-        let minutes = now.getMinutes();
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        hours = hours % 12;
-        hours = hours ? hours : 12;
-        minutes = minutes < 10 ? '0' + minutes : minutes;
-        return hours + ':' + minutes + ' ' + ampm;
-    }
-    // Event listeners
-    sendButton.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keypress', (e) => {
-        if(e.key === 'Enter') {
-            sendMessage();
+    
+    // Show group creation modal
+  async function showGroupModal() {
+  selectedUsersForGroup = [];
+  groupNameInput.value = '';
+  selectedUsersList.innerHTML = '<div class="hint">No users selected yet</div>';
+  availableUsersList.innerHTML = '';
+  
+  // Load available users - FIXED URL
+  try {
+    const response = await fetch(`http://10.10.15.140:7360/api/users/all/${myUserData.id}`);
+    const data = await response.json();
+    
+    if (data.users && data.users.length > 0) {
+      data.users.forEach(user => {
+        if (user._id !== myUserData.id) {
+          const userItem = createUserSelectItem(user);
+          availableUsersList.appendChild(userItem);
         }
-    });
-    messageInput.addEventListener('input', handleTyping);
-    // Socket event listeners
-    socket.on('connect', () => {
-        mySocketId = socket.id;
-        myUserId.textContent = `ID: ${mySocketId.substring(0, 8)}...`;
-        console.log('Connected with ID:', mySocketId);
-        // Immediately join with real username when connected
-        socket.emit('joinRoom', {
-            roomName: 'general',
-            username: myUserData.username,
-            id: myUserData.id
+      });
+    }
+  } catch (err) {
+    console.error('Error loading users for group:', err);
+    availableUsersList.innerHTML = '<div class="error">Error loading users</div>';
+  }
+  
+  groupModal.style.display = 'flex';
+}
+    
+    // Create user select item for group creation
+    function createUserSelectItem(user) {
+        const item = document.createElement('div');
+        item.className = 'user-select-item';
+        item.dataset.userId = user._id;
+        
+        item.innerHTML = `
+            <img src="${user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random&color=fff`}" alt="${user.username}">
+            <div class="user-select-info">
+                <h4>${user.username}</h4>
+                <p>${user.isOnline ? 'Online' : 'Offline'}</p>
+            </div>
+            <div class="user-checkbox">
+                <i class="fas fa-check"></i>
+            </div>
+        `;
+        
+        item.addEventListener('click', () => {
+            toggleUserSelection(user, item);
         });
+        
+        return item;
+    }
+    
+    // Toggle user selection for group
+    function toggleUserSelection(user, item) {
+        const userId = user._id;
+        const index = selectedUsersForGroup.indexOf(userId);
+        
+        if (index === -1) {
+            // Select user
+            selectedUsersForGroup.push(userId);
+            item.classList.add('selected');
+            
+            // Add to selected users list
+            const selectedUserEl = document.createElement('div');
+            selectedUserEl.className = 'selected-user';
+            selectedUserEl.dataset.userId = userId;
+            selectedUserEl.innerHTML = `
+                ${user.username}
+                <span class="remove-user" onclick="removeUserFromGroup('${userId}')">&times;</span>
+            `;
+            
+            // Remove hint if present
+            const hint = selectedUsersList.querySelector('.hint');
+            if (hint) hint.remove()
+            
+            selectedUsersList.appendChild(selectedUserEl);
+        } else {
+            // Deselect user
+            selectedUsersForGroup.splice(index, 1);
+            item.classList.remove('selected');
+            
+            // Remove from selected users list
+            const selectedUserEl = selectedUsersList.querySelector(`[data-user-id="${userId}"]`);
+            if (selectedUserEl) selectedUserEl.remove();
+            
+            // Add hint if no users selected
+            if (selectedUsersForGroup.length === 0) {
+                selectedUsersList.innerHTML = '<div class="hint">No users selected yet</div>';
+            }
+        }
+    }
+    
+    // Remove user from group selection (called from inline onclick)
+    window.removeUserFromGroup = function(userId) {
+        selectedUsersForGroup = selectedUsersForGroup.filter(id => id !== userId);
+        
+        // Update selected users list
+        const selectedUserEl = selectedUsersList.querySelector(`[data-user-id="${userId}"]`);
+        if (selectedUserEl) selectedUserEl.remove();
+        
+        // Update user select item
+        const userItem = availableUsersList.querySelector(`[data-user-id="${userId}"]`);
+        if (userItem) userItem.classList.remove('selected');
+        
+        // Add hint if no users selected
+        if (selectedUsersForGroup.length === 0) {
+            selectedUsersList.innerHTML = '<div class="hint">No users selected yet</div>';
+        }
+    };
+    
+   async function createGroup() {
+  const groupName = groupNameInput.value.trim();
+  
+  if (!groupName) {
+    alert('Please enter a group name');
+    return;
+  }
+  
+  if (selectedUsersForGroup.length < 1) {
+    alert('Please select at least one user for the group');
+    return;
+  }
+  
+  try {
+    // FIXED: Make sure this endpoint exists
+    const response = await fetch('http://10.10.15.140:7360/api/group', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: groupName,
+        participants: selectedUsersForGroup,
+        admin: myUserData.id
+      })
     });
-    socket.on('userListUpdate', (users) => {
-        console.log('User list updated:', users);
-        onlineUsers = users;
-        // Update all user statuses
-        const allUserItems = document.querySelectorAll('.chat-item');
-        allUserItems.forEach(item => {
-            const userId = item.dataset.userId;
-            const isOnline = onlineUsers.some(u => u.userId === userId && u.userId !== myUserData.id);
-            if(isOnline) {
-                item.dataset.type = 'online';
-                item.querySelector('.status-indicator').className = 'status-indicator online';
-                item.querySelector('.timestamp').textContent = 'Online';
-                item.querySelector('.last-message').textContent = 'Available to chat';
-                if(!item.querySelector('.online-pulse')) {
-                    item.innerHTML += '<div class="online-pulse"></div>';
-                }
-                // Move to online list if in offline list
-                if(item.parentNode.id === 'static-users-list') {
-                    onlineUsersList.appendChild(item);
-                }
-            } else if(userId !== myUserData.id) {
-                item.dataset.type = 'offline';
-                item.querySelector('.status-indicator').className = 'status-indicator offline';
-                item.querySelector('.timestamp').textContent = 'Offline';
-                item.querySelector('.last-message').textContent = 'Click to chat';
-                const pulse = item.querySelector('.online-pulse');
-                if(pulse) pulse.remove();
-                // Move to offline list if in online list
-                if(item.parentNode.id === 'online-users-list') {
-                    const offlineList = document.getElementById('static-users-list');
-                    if(offlineList) {
-                        offlineList.appendChild(item);
-                    }
-                }
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      // Close modal
+      groupModal.style.display = 'none';
+      
+      // Reload groups
+      loadGroups();
+      
+      // Show success message
+      alert('Group created successfully!');
+      
+      // Optionally, automatically select the new group
+      if (data.conversation && data.conversation._id) {
+        // Add a small delay to ensure the group is loaded
+        setTimeout(() => {
+          loadGroups();
+        }, 1000);
+      }
+    } else {
+      alert('Error creating group: ' + (data.error || 'Unknown error'));
+    }
+  } catch (err) {
+    console.error('Error creating group:', err);
+    alert('Error creating group: ' + err.message);
+  }
+}
+    
+    // Filter chats based on search
+    function filterChats() {
+        const searchTerm = searchUsers.value.toLowerCase();
+        const allChatItems = document.querySelectorAll('.chat-item');
+        
+        allChatItems.forEach(item => {
+            const chatName = item.querySelector('.chat-name').textContent.toLowerCase();
+            if (chatName.includes(searchTerm)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
             }
         });
-        // Keep this line - load online users list
-        loadOnlineUsers();
-        onlineCount.textContent = `(${Math.max(0, onlineUsers.length - 1)})`;
-    });
-    socket.on('chatRoom', (data) => {
-        console.log('Chat room event received:', data);
-        receiveMessage(data);
-    });
-    socket.on('userTyping', (data) => {
-        if(data.isTyping) {
-            typingUsers.add(data.username);
-        } else {
-            typingUsers.delete(data.username);
-        }
-        updateTypingIndicator();
-    });
-    socket.on('user_joined', (data) => {
-        console.log(`${data.username} joined the chat`);
-    });
-    socket.on('user_left', (data) => {
-        console.log(`${data.username} left the chat`);
-    });
-    socket.on('disconnect', () => {
-        myStatus.className = 'status-indicator offline';
-        myUserId.textContent = 'Disconnected';
-    });
-    socket.on('connect_error', (error) => {
-        console.error('Connection error:', error);
-    });
+    }
+    
+    // Format time
+    function formatTime(dateString) {
+        if (!dateString) return '';
+        
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `${diffHours}h ago`;
+        
+        const diffDays = Math.floor(diffHours / 24);
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays}d ago`;
+        
+        return date.toLocaleDateString();
+    }
+    
     // Initialize the app when page loads
     document.addEventListener('DOMContentLoaded', initApp);
     </script>
-    <style>
-    .current-user-info {
-        display: none;
-        align-items: center;
-        padding: 15px;
-        background: #f8f9fa;
-        border-bottom: 1px solid #eee;
-    }
-
-    .profile-pic-small {
-        position: relative;
-        margin-right: 10px;
-    }
-
-    .profile-pic-small img {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-    }
-
-    .user-details {
-        flex: 1;
-    }
-
-    .username {
-        font-weight: 600;
-        color: #333;
-    }
-
-    .user-id {
-        font-size: 11px;
-        color: #666;
-    }
-
-    .online-count {
-        background: #4caf50;
-        color: white;
-        border-radius: 10px;
-        padding: 2px 8px;
-        font-size: 12px;
-    }
-
-    .loading,
-    .no-users {
-        text-align: center;
-        padding: 20px;
-        color: #666;
-        font-style: italic;
-    }
-
-    .online-pulse {
-        width: 8px;
-        height: 8px;
-        background: #4caf50;
-        border-radius: 50%;
-        animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-        0% {
-            opacity: 1;
-        }
-
-        50% {
-            opacity: 0.5;
-        }
-
-        100% {
-            opacity: 1;
-        }
-    }
-
-    .typing-indicator {
-        font-style: italic;
-        color: #666;
-        font-size: 12px;
-        padding: 5px 15px;
-    }
-
-    .logout-btn {
-        float: right;
-        font-size: 14px;
-        color: #fff;
-        background: #e74c3c;
-        padding: 5px 10px;
-        border-radius: 4px;
-        text-decoration: none;
-    }
-
-    .logout-btn:hover {
-        background: #c0392b;
-    }
-
-    .create-group-btn {
-        margin-right: 8px;
-        padding: 4px 8px;
-        font-size: 16px;
-        background: #4caf50;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .create-group-btn:hover {
-        background: #45a049;
-    }
-
-
-    .chat-item.selected {
-  background: #e0f7fa;
-}
-
-    </style>
 </body>
-
 </html>

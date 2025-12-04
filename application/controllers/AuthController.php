@@ -34,7 +34,7 @@ class AuthController extends CI_Controller
             $this->load->view("Register");
         } else {
             // Validation passed → save user
-            $url = "http://10.10.15.140:5555/api/register";
+            $url = "http://10.10.15.140:7360/api/register";
             $data = [
                 "username" => $this->input->post("uname"),
                 "password" => $this->input->post("password"),
@@ -57,7 +57,7 @@ class AuthController extends CI_Controller
 
     public function loginUser()
     {
-        $url = "http://10.10.15.140:5555/api/login";
+        $url = "http://10.10.15.140:7360/api/login";
         $data = [
             "username" => $this->input->post("uname"),
             "password" => $this->input->post("password"),
