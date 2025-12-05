@@ -234,6 +234,7 @@
         
         .chat-item {
             display: flex;
+            position: relative;
             align-items: center;
             padding: 16px;
             background: white;
@@ -327,18 +328,7 @@
             text-overflow: ellipsis;
         }
         
-        .unread-badge {
-            background: var(--primary);
-            color: white;
-            font-size: 12px;
-            font-weight: 600;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+
         
         /* Main Chat Area */
         .main-chat {
@@ -427,8 +417,6 @@
         .message {
             width: fit-content;
             margin-bottom: 20px;
-
-
             animation: fadeIn 0.3s ease;
         }
         
@@ -451,7 +439,7 @@
 
 .username {
     font-weight: bold;
-    color: #2c3e50;   /* dark shade for contrast */
+    color: #2c3e50;   
     margin-right: 8px;
     display: inline-block;
 }
@@ -950,8 +938,8 @@
 
 .unread-badge {
   position: absolute;
-  right: 15px;
-  top: 50%;
+  right: 25px;
+  top: 60%;
   transform: translateY(-50%);
   background-color: #ef4444;
   color: white;
