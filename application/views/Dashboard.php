@@ -11,13 +11,13 @@
         
     </head>
     <body>
-        <div class="chat-app">
+       <div class="chat-app">
             <!-- Sidebar -->
             <div class="sidebar">
                 <div class="sidebar-header">
                     
                     <div class="current-user-info">
-                        <div class="user-avatar">
+                        <div class="user-avatar" id="my-avatar-container" style="cursor: pointer;">
                             <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($username); ?>&background=6366f1&color=fff&bold=true" alt="Profile" id="my-avatar">
                             <div class="user-status online" id="my-status"></div>
                         </div>
@@ -133,6 +133,75 @@
                 </div>
             </div>
         </div>
+
+                <!-- Profile Modal (View Only) -->
+        <div class="profile-modal" id="profile-modal">
+            <div class="profile-modal-content">
+                <h3 style="margin: 0 0 20px 0; text-align: center;">My Profile</h3>
+                
+                <div class="profile-avatar">
+                    <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($username); ?>&background=6366f1&color=fff&bold=true" 
+                         alt="Profile" id="profile-view-avatar">
+                </div>
+                
+                <div class="profile-info">
+                    <div class="profile-field">
+                        <label>Username:</label>
+                        <span id="profile-view-username"><?php echo htmlspecialchars($username); ?></span>
+                    </div>
+                    <div class="profile-field">
+                        <label>User ID:</label>
+                        <span id="profile-view-userid"><?php echo htmlspecialchars($userId); ?></span>
+                    </div>
+                    <div class="profile-field">
+                        <label>Status:</label>
+                        <span id="profile-view-status">Online</span>
+                    </div>
+                </div>
+                
+                <div class="profile-modal-footer">
+                    <button class="profile-btn" id="profile-close">Close</button>
+                    <button class="profile-btn profile-btn-primary" id="profile-edit">Edit Profile</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Profile Modal -->
+        <div class="edit-modal" id="edit-modal">
+            <div class="edit-modal-content">
+                <h3 style="margin: 0 0 20px 0; text-align: center;">Edit Profile</h3>
+                
+                <div class="edit-form-group">
+                    <label>Username</label>
+                    <input type="text" class="edit-form-input" id="edit-username" 
+                           value="<?php echo htmlspecialchars($username); ?>">
+                </div>
+                
+                <div class="edit-form-group">
+                    <label>Current Password (required for password change)</label>
+                    <input type="password" class="edit-form-input" id="edit-current-password" 
+                           placeholder="Enter current password">
+                </div>
+                
+                <div class="edit-form-group">
+                    <label>New Password (leave empty to keep current)</label>
+                    <input type="password" class="edit-form-input" id="edit-new-password" 
+                           placeholder="Enter new password">
+                </div>
+                
+                <div class="edit-form-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" class="edit-form-input" id="edit-confirm-password" 
+                           placeholder="Confirm new password">
+                </div>
+                
+                <div class="edit-modal-footer">
+                    <button class="edit-btn" id="edit-cancel">Cancel</button>
+                    <button class="edit-btn edit-btn-primary" id="edit-save">Save Changes</button>
+                </div>
+            </div>
+        </div>
+
         <script>
         // Socket.IO connection
         const socket = io("http://10.10.15.140:7360", {
@@ -208,12 +277,152 @@
         // Load initial data
         loadConversations();
         loadAllUsers();
-        
+
+        startUnreadCheck();
         // Set up event listeners
         setupEventListeners();
         
         console.log("App initialized for user:", myUserData.username);
         }
+
+
+// Profile Modal Elements
+        const profileModal = document.getElementById('profile-modal');
+        const profileClose = document.getElementById('profile-close');
+        const profileEdit = document.getElementById('profile-edit');
+        const profileViewUsername = document.getElementById('profile-view-username');
+        const profileViewAvatar = document.getElementById('profile-view-avatar');
+
+        // Edit Modal Elements
+        const editModal = document.getElementById('edit-modal');
+        const editCancel = document.getElementById('edit-cancel');
+        const editSave = document.getElementById('edit-save');
+        const editUsername = document.getElementById('edit-username');
+        const editCurrentPassword = document.getElementById('edit-current-password');
+        const editNewPassword = document.getElementById('edit-new-password');
+        const editConfirmPassword = document.getElementById('edit-confirm-password');
+
+        // Open profile modal (view only)
+        document.getElementById('my-avatar-container').addEventListener('click', () => {
+            // Update view modal with current data
+            profileViewUsername.textContent = myUserData.username;
+            profileViewAvatar.src = myAvatar.src;
+            profileModal.style.display = 'flex';
+        });
+
+        // Close profile modal
+        profileClose.addEventListener('click', () => {
+            profileModal.style.display = 'none';
+        });
+
+        // Open edit modal from profile modal
+        profileEdit.addEventListener('click', () => {
+            // Pre-fill edit form
+            editUsername.value = myUserData.username;
+            editCurrentPassword.value = '';
+            editNewPassword.value = '';
+            editConfirmPassword.value = '';
+            
+            // Close profile modal, open edit modal
+            profileModal.style.display = 'none';
+            editModal.style.display = 'flex';
+        });
+
+        // Close edit modal
+        editCancel.addEventListener('click', () => {
+            editModal.style.display = 'none';
+            // Re-open profile modal
+            profileModal.style.display = 'flex';
+        });
+
+        // Save changes in edit modal
+        editSave.addEventListener('click', async () => {
+            const newUsername = editUsername.value.trim();
+            const currentPassword = editCurrentPassword.value;
+            const newPassword = editNewPassword.value;
+            const confirmPassword = editConfirmPassword.value;
+            
+            // Validate passwords if changing
+            if (newPassword && !currentPassword) {
+                alert('Please enter current password to change password');
+                return;
+            }
+            
+            if (newPassword && newPassword !== confirmPassword) {
+                alert('New passwords do not match');
+                return;
+            }
+            
+            if (newPassword && newPassword.length < 6) {
+                alert('Password must be at least 6 characters');
+                return;
+            }
+            
+            try {
+                console.log({
+                        userId: myUserData.id,
+                        username: newUsername,
+                        currentPassword: currentPassword,
+                        newPassword: newPassword || null
+                    })
+                const response = await fetch('http://10.10.15.140:7360/api/user/update-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: myUserData.id,
+                        username: newUsername,
+                        currentPassword: currentPassword,
+                        newPassword: newPassword || null
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update user data
+                    myUserData.username = newUsername;    
+                    // Update UI
+                    myUsername.textContent = newUsername;
+                    profileViewUsername.textContent = newUsername;
+                    myAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(newUsername)}&background=6366f1&color=fff&bold=true`;
+                    profileViewAvatar.src = myAvatar.src;
+                    
+                    // Notify socket server
+                    socket.emit('usernameUpdate', {
+                        userId: myUserData.id,
+                        newUsername: newUsername
+                    });
+                    
+                    // Close modals
+                    editModal.style.display = 'none';
+                    profileModal.style.display = 'none';
+                    
+                    alert('Profile updated successfully!');
+                    
+                } else {
+                    alert(data.error || 'Failed to update profile');
+                }
+            } catch (err) {
+                console.error('Error updating profile:', err);
+                alert('Error updating profile');
+            }
+        });
+
+        // Close modals on outside click
+        profileModal.addEventListener('click', (e) => {
+            if (e.target === profileModal) {
+                profileModal.style.display = 'none';
+            }
+        });
+
+        editModal.addEventListener('click', (e) => {
+            if (e.target === editModal) {
+                editModal.style.display = 'none';
+                profileModal.style.display = 'flex';
+            }
+        });
+
+
         
         // Set up event listeners
         function setupEventListeners() {
@@ -271,17 +480,43 @@
         updateUserStatusInLists();
         });
         
-        socket.on('chatRoom', (data) => {
-        console.log('New message received:', data);
-        if (data.room === currentRoom && data.senderId !== myUserData.id) {
-        // console.log("logging saved msg2       ",savedMessage)
-        displayMessage(data.message, false);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        
-        // Update conversation in sidebar
-        updateConversationLastMessage(currentConversation._id, data.message);
+    // Update socket listener for new messages
+socket.on('chatRoom', (data) => {
+  console.log('New message received:', data);
+  if (data.room === currentRoom && data.senderId !== myUserData.id) {
+    displayMessage(data.message, false);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Update conversation in sidebar
+    updateConversationLastMessage(currentConversation._id, data.message);
+    
+    // Mark as read automatically if in current conversation
+    if (currentConversation && currentConversation._id === data.message.conversationId) {
+      markConversationAsRead(data.message.conversationId);
+    }
+  } else if (data.senderId !== myUserData.id) {
+    // Message in another conversation - increment unread count
+    const conversationId = data.message.conversationId;
+    const conversationItem = document.querySelector(`.chat-item[data-id="${conversationId}"]`);
+    
+    if (conversationItem) {
+      let currentCount = 0;
+      const unreadBadge = conversationItem.querySelector('.unread-badge');
+      if (unreadBadge) {
+        currentCount = parseInt(unreadBadge.textContent) || 0;
+        if (unreadBadge.textContent === '99+') {
+          currentCount = 100; // Keep at 99+
         }
-        });
+      }
+      
+      const newCount = currentCount + 1;
+      updateUnreadBadge(conversationId, newCount);
+      
+      // Update conversation last message
+      updateConversationLastMessage(conversationId, data.message);
+    }
+  }
+});
         
         socket.on('userTyping', (data) => {
         console.log("typing socket",data)
@@ -295,42 +530,67 @@
         }
         });
         }
+
+        // Add this function to update unread badges
+function updateUnreadBadge(conversationId, count) {
+  const conversationItem = document.querySelector(`.chat-item[data-id="${conversationId}"]`);
+  if (conversationItem) {
+    let unreadBadge = conversationItem.querySelector('.unread-badge');
+    
+    if (count > 0) {
+      conversationItem.classList.add('unread');
+      if (!unreadBadge) {
+        unreadBadge = document.createElement('div');
+        // unreadBadge.className = 'unread-badge';
+        conversationItem.appendChild(unreadBadge);
+      }
+      unreadBadge.textContent = count > 99 ? '99+' : count;
+    } else {
+      conversationItem.classList.remove('unread');
+      if (unreadBadge) {
+        unreadBadge.remove();
+      }
+    }
+  }
+
+}
+
         
-        // Load all conversations
-        async function loadConversations() {
-        try {
-        const response = await fetch(`http://10.10.15.140:7360/api/${myUserData.id}/conversations`);
-        const data = await response.json();
+  // Update loadConversations function
+async function loadConversations() {
+  try {
+    const response = await fetch(`http://10.10.15.140:7360/api/${myUserData.id}/conversations`);
+    const data = await response.json();
+    
+    if (data.conversations && data.conversations.length > 0) {
+      allConversations = data.conversations;
+      displayConversations(data.conversations);
+      
+      // Load groups separately
+      loadGroups();
+    } else {
+      conversationsList.innerHTML = '<div class="no-chats">No conversations yet</div>';
+    }
+  } catch (err) {
+    console.error("Error loading conversations:", err);
+    conversationsList.innerHTML = '<div class="error">Error loading conversations</div>';
+  }
+}
         
-        if (data.conversations && data.conversations.length > 0) {
-        allConversations = data.conversations;
-        displayConversations(data.conversations);
-        
-        // Load groups separately
-        loadGroups();
-        } else {
-        conversationsList.innerHTML = '<div class="no-chats">No conversations yet</div>';
-        }
-        } catch (err) {
-        console.error("Error loading conversations:", err);
-        conversationsList.innerHTML = '<div class="error">Error loading conversations</div>';
-        }
-        }
-        
-        // Load groups
-        async function loadGroups() {
-        try {
-        const response = await fetch(`http://10.10.15.140:7360/api/${myUserData.id}/groups`);
-        const data = await response.json();
-        
-        if (data.groups && data.groups.length > 0) {
-        displayGroups(data.groups);
-        document.getElementById('groups-header').style.display = 'block';
-        }
-        } catch (err) {
-        console.error("Error loading groups:", err);
-        }
-        }
+     // Update loadGroups function
+async function loadGroups() {
+  try {
+    const response = await fetch(`http://10.10.15.140:7360/api/${myUserData.id}/groups`);
+    const data = await response.json();
+    
+    if (data.groups && data.groups.length > 0) {
+      displayGroups(data.groups);
+      document.getElementById('groups-header').style.display = 'block';
+    }
+  } catch (err) {
+    console.error("Error loading groups:", err);
+  }
+}
         
         // Load all users for group creation
         async function loadAllUsers() {
@@ -346,168 +606,196 @@
         console.error("Error loading all users:", err);
         }
         }
-        // Display conversations
-        function displayConversations(conversations) {
-        conversationsList.innerHTML = '';
         
-        conversations.forEach(conv => {
-        if (!conv.isGroup) {
-        // Private conversation
-        const otherParticipant = conv.participants?.find(p => p._id !== myUserData.id);
-        if (otherParticipant) {
+
+// Update displayConversations function to handle null values
+function displayConversations(conversations) {
+  conversationsList.innerHTML = '';
+  
+  conversations.forEach(conv => {
+    if (!conv.isGroup) {
+      // Private conversation
+      const otherParticipant = conv.participants?.find(p => p._id !== myUserData.id);
+      if (otherParticipant) {
         const isOnline = onlineUsers.some(u => u.userId === otherParticipant._id);
         
         const conversationItem = createConversationItem({
-        id: conv._id,
-        name: otherParticipant.username,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(otherParticipant.username)}&background=random&color=fff`,
-        lastMessage: conv.lastMessage?.text || 'Start chatting',
-        time: formatTime(conv.updatedAt),
-        type: 'private',
-        userId: otherParticipant._id,
-        isOnline: isOnline,
-        unread: 0
+          id: conv._id,
+          name: otherParticipant.username,
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(otherParticipant.username)}&background=random&color=fff`,
+          lastMessage: conv.lastMessage?.text || 'Start chatting',
+          time: formatTime(conv.updatedAt),
+          type: 'private',
+          userId: otherParticipant._id,
+          isOnline: isOnline,
+          unread: conv.unreadCount || 0
         });
         
         conversationsList.appendChild(conversationItem);
-        }
-        }
-        });
-        }
+      }
+    }
+  });
+}
         
-        // Display groups
-        function displayGroups(groups) {
-        groupChatsList.innerHTML = '';
+      
+// Update displayGroups function to handle null values
+function displayGroups(groups) {
+  groupChatsList.innerHTML = '';
+  
+  groups.forEach(group => {
+    const groupItem = createConversationItem({
+      id: group._id,
+      name: group.groupName,
+      avatar: group.groupImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(group.groupName)}&background=6366f1&color=fff`,
+      lastMessage: group.lastMessage?.text || 'No messages yet',
+      time: formatTime(group.updatedAt),
+      type: 'group',
+      participantsCount: group.participants?.length || 0,
+      unread: group.unreadCount || 0
+    });
+    
+    groupChatsList.appendChild(groupItem);
+  });
+}
+       // Update createConversationItem to handle unread count better
+function createConversationItem(data) {
+  const item = document.createElement('div');
+  item.className = `chat-item ${(data.unread || 0) > 0 ? 'unread' : ''}`;
+  item.dataset.id = data.id;
+  item.dataset.type = data.type;
+  item.dataset.userId = data.userId || '';
+  
+  // Show unread badge if count > 0
+  const unreadBadgeHTML = (data.unread || 0) > 0 ? 
+    `<div class="unread-badge">${data.unread > 99 ? '99+' : data.unread}</div>` : '';
+  
+  item.innerHTML = `
+  <div class="chat-avatar ${data.type === 'group' ? 'group' : ''}">
+    <img src="${data.avatar}" alt="${data.name}">
+    ${data.type === 'private' ? `<div class="chat-status ${data.isOnline ? 'online' : 'offline'}"></div>` : ''}
+  </div>
+  <div class="chat-info">
+    <div class="chat-header">
+      <div class="chat-name">${data.name}</div>
+      <div class="chat-time">${data.time}</div>
+    </div>
+    <div class="last-message">${data.lastMessage}</div>
+    ${data.type === 'group' ? `<div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">${data.participantsCount} members</div>` : ''}
+  </div>
+  ${unreadBadgeHTML}
+  `;
+  
+  item.addEventListener('click', () => {
+    selectConversation(data);
+  });
+  
+  return item;
+}
         
-        groups.forEach(group => {
-        const groupItem = createConversationItem({
-        id: group._id,
-        name: group.groupName,
-        avatar: group.groupImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(group.groupName)}&background=6366f1&color=fff`,
-        lastMessage: group.lastMessage?.text || 'No messages yet',
-        time: formatTime(group.updatedAt),
-        type: 'group',
-        participantsCount: group.participants?.length || 0,
-        unread: 0
-        });
-        
-        groupChatsList.appendChild(groupItem);
-        });
-        }
-        
-        // Create conversation list item
-        function createConversationItem(data) {
-        const item = document.createElement('div');
-        item.className = `chat-item ${data.unread > 0 ? 'unread' : ''}`;
-        item.dataset.id = data.id;
-        item.dataset.type = data.type;
-        item.dataset.userId = data.userId || '';
-        
-        item.innerHTML = `
-        <div class="chat-avatar ${data.type === 'group' ? 'group' : ''}">
-            <img src="${data.avatar}" alt="${data.name}">
-            ${data.type === 'private' ? `<div class="chat-status ${data.isOnline ? 'online' : 'offline'}"></div>` : ''}
-        </div>
-        <div class="chat-info">
-            <div class="chat-header">
-                <div class="chat-name">${data.name}</div>
-                <div class="chat-time">${data.time}</div>
-            </div>
-            <div class="last-message">${data.lastMessage}</div>
-            ${data.type === 'group' ? `<div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">${data.participantsCount} members</div>` : ''}
-        </div>
-        ${data.unread > 0 ? `<div class="unread-badge">${data.unread}</div>` : ''}
-        `;
-        
-        item.addEventListener('click', () => {
-        selectConversation(data);
-        });
-        
-        return item;
-        }
-        
-        // Select conversation (private or group)
-        async function selectConversation(data) {
-        // Remove active class from all items
-        document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
-        event.currentTarget.classList.add('active');
-        
-        // Hide welcome screen, show chat
-        welcomeScreen.style.display = 'none';
-        chatHeader.style.display = 'flex';
-        chatMessages.style.display = 'block';
-        chatInputArea.style.display = 'flex';
-        
-        // Set current conversation data
-        currentChatType = data.type;
-        
-        if (data.type === 'private') {
-        // Private chat
-        currentUser = {
-        id: data.userId,
-        username: data.name,
-        avatar: data.avatar
-        };
-        
-        currentChatTitle.textContent = data.name;
-        currentChatStatus.textContent = data.isOnline ? 'Online' : 'Offline';
-        currentChatStatus.innerHTML = data.isOnline ?
-        '<i class="fas fa-circle" style="color: #10b981; font-size: 10px;"></i> Online' :
-        '<i class="fas fa-circle" style="color: #94a3b8; font-size: 10px;"></i> Offline';
-        
-        // Get or create conversation
-        try {
-        const response = await fetch('http://10.10.15.140:7360/api/conversation', {
+       // Update selectConversation function to mark as read
+async function selectConversation(data) {
+  // Remove active class from all items
+  document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  
+  // Hide welcome screen, show chat
+  welcomeScreen.style.display = 'none';
+  chatHeader.style.display = 'flex';
+  chatMessages.style.display = 'block';
+  chatInputArea.style.display = 'flex';
+  
+  // Set current conversation data
+  currentChatType = data.type;
+  
+  if (data.type === 'private') {
+    // Private chat
+    currentUser = {
+      id: data.userId,
+      username: data.name,
+      avatar: data.avatar
+    };
+    
+    currentChatTitle.textContent = data.name;
+    currentChatStatus.textContent = data.isOnline ? 'Online' : 'Offline';
+    currentChatStatus.innerHTML = data.isOnline ?
+    '<i class="fas fa-circle" style="color: #10b981; font-size: 10px;"></i> Online' :
+    '<i class="fas fa-circle" style="color: #94a3b8; font-size: 10px;"></i> Offline';
+    
+    // Get or create conversation
+    try {
+      const response = await fetch('http://10.10.15.140:7360/api/conversation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-        userId1: myUserData.id,
-        userId2: data.userId
+          userId1: myUserData.id,
+          userId2: data.userId
         })
-        });
-        
-        const convData = await response.json();
-        currentConversation = convData.conversation;
-        currentRoom = currentConversation.roomName;
-        } catch (err) {
-        console.error('Error getting conversation:', err);
-        return;
-        }
-        } else {
-        // Group chat
-        currentUser = {
-        id: data.id,
-        username: data.name,
-        avatar: data.avatar,
-        isGroup: true
-        };
-        
-        currentChatTitle.textContent = data.name;
-        currentChatStatus.textContent = `${data.participantsCount} members`;
-        currentChatStatus.innerHTML = `<i class="fas fa-users" style="color: #6366f1;"></i> ${data.participantsCount} members`;
-        
-        currentConversation = { _id: data.id, roomName: `group_${data.id}` };
-        currentRoom = `group_${data.id}`;
-        }
-        
-        // Update avatar
-        currentUserAvatar.src = data.avatar;
-        
-        // Join socket room
-        socket.emit('joinRoom', {
-        roomName: currentRoom,
-        username: myUserData.username,
-        id: myUserData.id
-        });
-        
-        // Enable message input
-        messageInput.disabled = false;
-        sendButton.disabled = false;
-        messageInput.focus();
-        
-        // Load chat history
-        loadChatHistory(currentConversation._id);
-        }
+      });
+      
+      const convData = await response.json();
+      currentConversation = convData.conversation;
+      currentRoom = currentConversation.roomName;
+    } catch (err) {
+      console.error('Error getting conversation:', err);
+      return;
+    }
+  } else {
+    // Group chat
+    currentUser = {
+      id: data.id,
+      username: data.name,
+      avatar: data.avatar,
+      isGroup: true
+    };
+    
+    currentChatTitle.textContent = data.name;
+    currentChatStatus.textContent = `${data.participantsCount} members`;
+    currentChatStatus.innerHTML = `<i class="fas fa-users" style="color: #6366f1;"></i> ${data.participantsCount} members`;
+    
+    currentConversation = { _id: data.id, roomName: `group_${data.id}` };
+    currentRoom = `group_${data.id}`;
+  }
+  
+  // Update avatar
+  currentUserAvatar.src = data.avatar;
+  
+  // Join socket room
+  socket.emit('joinRoom', {
+    roomName: currentRoom,
+    username: myUserData.username,
+    id: myUserData.id
+  });
+  
+  // Mark conversation as read
+  await markConversationAsRead(currentConversation._id);
+  
+  // Enable message input
+  messageInput.disabled = false;
+  sendButton.disabled = false;
+  messageInput.focus();
+  
+  // Load chat history
+  loadChatHistory(currentConversation._id);
+}
+
+
+// Update markConversationAsRead function
+async function markConversationAsRead(conversationId) {
+  try {
+    const response = await fetch(`http://10.10.15.140:7360/api/conversation/${conversationId}/read`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: myUserData.id })
+    });
+    
+    if (response.ok) {
+      // Update unread badge to 0
+      updateUnreadBadge(conversationId, 0);
+    }
+  } catch (err) {
+    console.error('Error marking conversation as read:', err);
+  }
+}
         
         // Add event listener to chat header
         chatHeader.addEventListener('click', () => {
@@ -619,39 +907,43 @@
         });
         });
         }
-        // Load chat history
-        async function loadChatHistory(conversationId) {
-        chatMessages.innerHTML = '';
-        
-        try {
-        const response = await fetch(`http://10.10.15.140:7360/api/messages/${conversationId}`);
-        const messages = await response.json();
 
-        var isGroup=messages.isGroup;
 
-        console.log("history data",messages)
-        
-        if (messages.messages.length === 0) {
-        const welcomeMsg = document.createElement('div');
-        welcomeMsg.className = 'message received';
-        welcomeMsg.innerHTML = `
-        <div class="message-content">
-            Start your conversation with ${currentUser.username}! Send your first message.
-        </div>
-        <div class="message-time">Just now</div>
-        `;
-        chatMessages.appendChild(welcomeMsg);
-        } else {
-        messages.messages.forEach(msg => {
-        displayMessage(msg, msg.sender._id === myUserData.id,isGroup);
-        });
-        }
-        
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        } catch (err) {
-        console.error('Error loading chat history:', err);
-        }
-        }
+      // Update loadChatHistory function to include userId
+async function loadChatHistory(conversationId) {
+  chatMessages.innerHTML = '';
+  
+  try {
+    // ADD userId to the query string
+    const response = await fetch(`http://10.10.15.140:7360/api/messages/${conversationId}?userId=${myUserData.id}`);
+    const messages = await response.json();
+
+    var isGroup = messages.isGroup;
+
+    console.log("history data", messages);
+    
+    if (messages.messages.length === 0) {
+      const welcomeMsg = document.createElement('div');
+      welcomeMsg.className = 'message received';
+      welcomeMsg.innerHTML = `
+      <div class="message-content">
+        Start your conversation with ${currentUser.username}! Send your first message.
+      </div>
+      <div class="message-time">Just now</div>
+      `;
+      chatMessages.appendChild(welcomeMsg);
+    } else {
+      messages.messages.forEach(msg => {
+        displayMessage(msg, msg.sender._id === myUserData.id, isGroup);
+      });
+    }
+    
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  } catch (err) {
+    console.error('Error loading chat history:', err);
+  }
+}
+
         
         // Display a message
         function displayMessage(msg, isSent,isGroup=false) {
@@ -769,42 +1061,68 @@
         }
         }
         
-        // Update online users display
-        function updateOnlineUsersDisplay() {
-        onlineUsersList.innerHTML = '';
-        onlineCount.textContent = onlineUsers.length;
-        
-        if (onlineUsers.length === 0) {
-        onlineUsersList.innerHTML = '<div class="no-users">No users online</div>';
-        return;
-        }
-        
-        // Filter out current user
-        const otherUsers = onlineUsers.filter(u => u.userId !== myUserData.id);
-        
-        if (otherUsers.length === 0) {
-        onlineUsersList.innerHTML = '<div class="no-users">No other users online</div>';
-        return;
-        }
-        
-        otherUsers.forEach(user => {
-        const userItem = createConversationItem({
-        id: `online_${user.userId}`,
-        name: user.username,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=10b981&color=fff`,
-        lastMessage: 'Click to chat',
-        time: 'Online',
-        type: 'private',
-        userId: user.userId,
-        isOnline: true,
-        unread: 0
-        });
-        
-        onlineUsersList.appendChild(userItem);
-          // HIDE USER FROM RECENT CHATS WHEN ONLINE
-            hideUserFromRecentChats(user.userId);
-        });
-        }
+     // Update updateOnlineUsersDisplay to handle unread counts
+function updateOnlineUsersDisplay() {
+  onlineUsersList.innerHTML = '';
+  onlineCount.textContent = onlineUsers.length;
+  
+  if (onlineUsers.length === 0) {
+    onlineUsersList.innerHTML = '<div class="no-users">No users online</div>';
+    return;
+  }
+  
+  // Filter out current user
+  const otherUsers = onlineUsers.filter(u => u.userId !== myUserData.id);
+  
+  if (otherUsers.length === 0) {
+    onlineUsersList.innerHTML = '<div class="no-users">No other users online</div>';
+    return;
+  }
+  
+  otherUsers.forEach(user => {
+    // Find if there's a conversation with this user
+    const existingConv = allConversations.find(conv => 
+      !conv.isGroup && conv.participants.some(p => p._id === user.userId)
+    );
+    
+    const userItem = createConversationItem({
+      id: existingConv ? existingConv._id : `online_${user.userId}`,
+      name: user.username,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=10b981&color=fff`,
+      lastMessage: 'Click to chat',
+      time: 'Online',
+      type: 'private',
+      userId: user.userId,
+      isOnline: true,
+      unread: existingConv ? existingConv.unreadCount || 0 : 0
+    });
+    
+    onlineUsersList.appendChild(userItem);
+    hideUserFromRecentChats(user.userId);
+  });
+}
+
+// Add periodic check for unread messages
+function startUnreadCheck() {
+  // Check for unread messages every 30 seconds
+  setInterval(async () => {
+    if (!currentConversation) return;
+    
+    try {
+      const response = await fetch(`http://10.10.15.140:7360/api/unread/${myUserData.id}`);
+      const data = await response.json();
+      
+      // Update total unread count if needed (could show in title)
+      if (data.totalUnread > 0) {
+        document.title = `(${data.totalUnread}) Chatapp`;
+      } else {
+        document.title = 'Chatapp';
+      }
+    } catch (err) {
+      console.error('Error checking unread messages:', err);
+    }
+  }, 30000);
+}
         
         // Update user status in conversation lists
         function updateUserStatusInLists() {
