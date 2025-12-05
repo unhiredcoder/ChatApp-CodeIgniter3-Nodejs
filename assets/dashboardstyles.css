@@ -425,8 +425,10 @@
         }
         
         .message {
-            max-width: 70%;
+            width: fit-content;
             margin-bottom: 20px;
+
+
             animation: fadeIn 0.3s ease;
         }
         
@@ -892,3 +894,30 @@
             }
         }
    
+
+   .member-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1e293b;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
+.member-name {
+  font-weight: 500;
+  color: #e2e8f0;
+}
+
+.add-user-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.add-user-row input {
+  flex: 1;
+}
+
+

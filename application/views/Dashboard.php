@@ -78,7 +78,7 @@
                 <p>Select a conversation from the sidebar to start chatting. You can message individual users or create group chats.</p>
             </div>
             
-            <div class="chat-header-area" id="chat-header" style="display: none;">
+            <div class="chat-header-area" id="chat-header" style="display: none;cursor: pointer;">
                 <div class="chat-header-avatar">
                     <img src="https://ui-avatars.com/api/?name=User&background=94a3b8&color=fff" alt="Profile" id="current-user-avatar">
                 </div>
@@ -504,6 +504,127 @@
         loadChatHistory(currentConversation._id);
     }
     
+
+// Add event listener to chat header
+chatHeader.addEventListener('click', () => {
+  if (currentChatType === 'group') {
+    showGroupManagementModal(currentConversation._id);
+  }
+});
+
+function showGroupManagementModal(conversationId) {
+  // Fetch group details
+  fetch(`http://10.10.15.140:7360/api/conversation/${conversationId}`)
+    .then(res => res.json())
+    .then(group => {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal">
+          <div class="modal-header">
+            <h3>Manage Group: ${group.groupName}</h3>
+            <button class="close-modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <h4>Members</h4>
+            <ul id="members-list">
+              ${group.participants.map(u => `
+                <li class="member-item">
+                  <span class="member-name">${u.username}</span>
+                  <button class="remove-user btn btn-secondary" data-id="${u._id}">Remove</button>
+                </li>
+              `).join('')}
+            </ul>
+            <h4>Add User</h4>
+            <div class="add-user-row">
+              <input type="text" id="new-user-id" placeholder="Enter Username">
+              <button id="add-user-btn" class="btn btn-primary">Add</button>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-danger" id="delete-group-btn">Delete Group</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      // Close modal
+      modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+
+      const membersList = modal.querySelector('#members-list');
+
+      // Remove user
+      modal.querySelectorAll('.remove-user').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const userId = btn.dataset.id;
+          fetch(`http://10.10.15.140:7360/api/group/remove`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversationId, userId })
+          })
+          .then(res => res.json())
+          .then(updated => {
+            // Update members list in realtime
+            membersList.innerHTML = updated.conversation.participants.map(u => `
+              <li class="member-item">
+                <span class="member-name">${u.username}</span>
+                <button class="remove-user btn btn-secondary" data-id="${u._id}">Remove</button>
+              </li>
+            `).join('');
+            // Re-bind remove buttons
+            membersList.querySelectorAll('.remove-user').forEach(newBtn => {
+              newBtn.addEventListener('click', () => {
+                const uid = newBtn.dataset.id;
+                fetch(`http://10.10.15.140:7360/api/group/remove`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ conversationId, userId: uid })
+                }).then(() => showGroupManagementModal(conversationId));
+              });
+            });
+          });
+        });
+      });
+
+      // Add user
+      modal.querySelector('#add-user-btn').addEventListener('click', () => {
+        const userName = document.getElementById('new-user-id').value.trim();
+        if (!userName) return;
+        fetch(`http://10.10.15.140:7360/api/group/add`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversationId, userName })
+        })
+        .then(res => res.json())
+        .then(updated => {
+          // Update members list in realtime
+          membersList.innerHTML = updated.conversation.participants.map(u => `
+            <li class="member-item">
+              <span class="member-name">${u.username}</span>
+              <button class="remove-user btn btn-secondary" data-id="${u._id}">Remove</button>
+            </li>
+          `).join('');
+        });
+      });
+
+      // Delete group with confirmation
+      modal.querySelector('#delete-group-btn').addEventListener('click', () => {
+        if (confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
+          fetch(`http://10.10.15.140:7360/api/group/${conversationId}`, {
+            method: 'DELETE'
+          }).then(() => {
+            alert("Group deleted successfully");
+            modal.remove();
+            location.reload();
+          });
+        }
+      });
+    });
+}
+
+
+
+
     // Load chat history
     async function loadChatHistory(conversationId) {
         chatMessages.innerHTML = '';
@@ -772,12 +893,14 @@
         item.innerHTML = `
             <img src="${user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random&color=fff`}" alt="${user.username}">
             <div class="user-select-info">
-                <h4>${user.username}</h4>
+                <h4 style="text-transform:capitalize">${user.username}</h4>
                 <p>${user.isOnline ? 'Online' : 'Offline'}</p>
             </div>
             <div class="user-checkbox">
                 <i class="fas fa-check"></i>
             </div>
+
+
         `;
         
         item.addEventListener('click', () => {
