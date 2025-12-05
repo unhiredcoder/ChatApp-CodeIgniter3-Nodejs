@@ -441,13 +441,21 @@
             margin-left: auto;
         }
         
-        .message-content {
-            padding: 14px 18px;
-            border-radius: 20px;
-            position: relative;
-            word-wrap: break-word;
-            line-height: 1.5;
-        }
+      .message-content {
+    padding: 14px 18px;
+    border-radius: 20px;
+    position: relative;
+    word-wrap: break-word;
+    line-height: 1.5;
+}
+
+.username {
+    font-weight: bold;
+    color: #2c3e50;   /* dark shade for contrast */
+    margin-right: 8px;
+    display: inline-block;
+}
+
         
         .message.sent .message-content {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
